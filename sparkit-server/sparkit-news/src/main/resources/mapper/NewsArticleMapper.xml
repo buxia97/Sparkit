@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sparkit.news.mapper.NewsArticleMapper">
+
+    <select id="countByCategory" resultType="java.util.Map">
+        SELECT
+            c.id AS categoryId,
+            c.name AS categoryName,
+            COUNT(a.id) AS articleCount,
+            SUM(a.view_count) AS totalViews,
+            SUM(a.like_count) AS totalLikes
+        FROM sparkit_news_category c
+        LEFT JOIN sparkit_news_article a ON c.id = a.category_id AND a.deleted = 0
+        <if test="startTime != null and startTime != ''">
+            AND a.publish_time &gt;= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND a.publish_time &lt;= #{endTime}
+        </if>
+        WHERE c.deleted = 0
+        GROUP BY c.id, c.name
+        ORDER BY articleCount DESC
+    </select>
+
+    <select id="publishTrend" resultType="java.util.Map">
+        SELECT
+            DATE_FORMAT(publish_time, '%Y-%m-%d') AS date,
+            COUNT(*) AS count,
+            SUM(CASE WHEN ai_generated = 1 THEN 1 ELSE 0 END) AS aiCount
+        FROM sparkit_news_article
+        WHERE deleted = 0
+        <if test="startTime != null and startTime != ''">
+            AND publish_time &gt;= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND publish_time &lt;= #{endTime}
+        </if>
+        GROUP BY DATE_FORMAT(publish_time, '%Y-%m-%d')
+        ORDER BY date ASC
+    </select>
+
+</mapper>

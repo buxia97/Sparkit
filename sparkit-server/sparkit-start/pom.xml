@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.sparkit</groupId>
+        <artifactId>sparkit-server</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <artifactId>sparkit-start</artifactId>
+    <packaging>jar</packaging>
+    <name>Sparkit Start</name>
+    <description>Sparkit 框架启动入口，运行此模块启动整个后端服务</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.sparkit</groupId>
+            <artifactId>sparkit-system</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.sparkit</groupId>
+            <artifactId>sparkit-user</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.sparkit</groupId>
+            <artifactId>sparkit-storage</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.sparkit</groupId>
+            <artifactId>sparkit-payment</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.sparkit</groupId>
+            <artifactId>sparkit-notification</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.sparkit</groupId>
+            <artifactId>sparkit-ai</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.sparkit</groupId>
+            <artifactId>sparkit-news</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.sparkit</groupId>
+            <artifactId>sparkit-job</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.sparkit</groupId>
+            <artifactId>sparkit-generator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sparkit.notification.mapper.NotifyRecordMapper">
+
+    <select id="countByType" resultType="java.util.Map">
+        SELECT
+            notify_type AS notifyType,
+            COUNT(*) AS totalCount,
+            SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) AS successCount,
+            SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) AS failCount
+        FROM sparkit_notify_record
+        WHERE 1 = 1
+        <if test="startTime != null and startTime != ''">
+            AND create_time &gt;= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND create_time &lt;= #{endTime}
+        </if>
+        GROUP BY notify_type
+        ORDER BY totalCount DESC
+    </select>
+
+</mapper>

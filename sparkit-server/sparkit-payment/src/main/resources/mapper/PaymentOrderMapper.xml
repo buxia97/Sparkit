@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sparkit.payment.mapper.PaymentOrderMapper">
+
+    <select id="statistics" resultType="java.util.Map">
+        SELECT
+            COUNT(*) AS totalCount,
+            SUM(CASE WHEN status = 2 THEN 1 ELSE 0 END) AS paidCount,
+            SUM(CASE WHEN status = 3 THEN 1 ELSE 0 END) AS refundedCount,
+            COALESCE(SUM(CASE WHEN status IN (2, 3) THEN amount ELSE 0 END), 0) AS totalAmount,
+            COALESCE(SUM(CASE WHEN status = 3 THEN refund_amount ELSE 0 END), 0) AS totalRefund
+        FROM sparkit_payment_order
+        WHERE deleted = 0
+        <if test="startTime != null and startTime != ''">
+            AND create_time &gt;= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND create_time &lt;= #{endTime}
+        </if>
+    </select>
+
+</mapper>

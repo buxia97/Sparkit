@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sparkit.system.mapper.ConfigMapper">
+
+    <update id="batchUpdateByKey" parameterType="java.util.List">
+        <foreach collection="list" item="item" separator=";">
+            UPDATE sparkit_config
+            SET config_value = #{item.configValue},
+                update_by = #{item.updateBy},
+                update_time = NOW()
+            WHERE config_key = #{item.configKey}
+        </foreach>
+    </update>
+
+</mapper>

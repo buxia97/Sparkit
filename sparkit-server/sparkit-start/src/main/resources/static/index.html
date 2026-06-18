@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sparkit - 通用开发框架</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #0a0a1a;
+            color: #fff;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* 科技感网格背景 */
+        .grid-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(0, 150, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 150, 255, 0.05) 1px, transparent 1px);
+            background-size: 60px 60px;
+            z-index: 0;
+        }
+
+        /* 发光圆点装饰 */
+        .dot-glow {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: 0;
+        }
+        .dot-glow-1 {
+            width: 400px;
+            height: 400px;
+            background: rgba(0, 100, 255, 0.15);
+            top: -100px;
+            left: -100px;
+        }
+        .dot-glow-2 {
+            width: 300px;
+            height: 300px;
+            background: rgba(0, 200, 255, 0.1);
+            bottom: -50px;
+            right: -50px;
+        }
+        .dot-glow-3 {
+            width: 200px;
+            height: 200px;
+            background: rgba(100, 0, 255, 0.08);
+            top: 50%;
+            left: 60%;
+        }
+
+        /* 粒子连线动画 canvas */
+        #particle-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            animation: fadeInUp 1.2s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 主标题 - 发光大文字 */
+        .logo-text {
+            font-size: 8rem;
+            font-weight: 800;
+            letter-spacing: 12px;
+            background: linear-gradient(135deg, #00b4ff 0%, #0066ff 40%, #a855f7 70%, #00d4ff 100%);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 4s ease infinite;
+            filter: drop-shadow(0 0 60px rgba(0, 100, 255, 0.3));
+            line-height: 1.1;
+            position: relative;
+        }
+
+        .logo-text::after {
+            content: 'Sparkit';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #00b4ff 0%, #0066ff 40%, #a855f7 70%, #00d4ff 100%);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 4s ease infinite;
+            filter: blur(30px) brightness(1.5);
+            opacity: 0.6;
+            z-index: -1;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .subtitle {
+            font-size: 1.3rem;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 20px;
+            letter-spacing: 6px;
+            font-weight: 300;
+        }
+
+        .divider {
+            width: 80px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(0, 150, 255, 0.6), transparent);
+            margin: 30px auto;
+        }
+
+        .tagline {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.35);
+            letter-spacing: 2px;
+            font-weight: 300;
+        }
+
+        /* 信息卡片 */
+        .info-cards {
+            display: flex;
+            gap: 40px;
+            margin-top: 50px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .info-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px;
+            padding: 20px 30px;
+            min-width: 180px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            cursor: default;
+        }
+
+        .info-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(0, 150, 255, 0.2);
+            transform: translateY(-3px);
+        }
+
+        .info-card .label {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.3);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+
+        .info-card .value {
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .info-card .value a {
+            color: rgba(0, 150, 255, 0.7);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .info-card .value a:hover {
+            color: rgba(0, 150, 255, 1);
+        }
+
+        /* 底部 */
+        .footer {
+            position: fixed;
+            bottom: 30px;
+            z-index: 2;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.15);
+            letter-spacing: 1px;
+        }
+
+        @media (max-width: 768px) {
+            .logo-text {
+                font-size: 4rem;
+                letter-spacing: 6px;
+            }
+            .subtitle {
+                font-size: 1rem;
+            }
+            .info-cards {
+                gap: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 背景层 -->
+    <div class="grid-bg"></div>
+    <div class="dot-glow dot-glow-1"></div>
+    <div class="dot-glow dot-glow-2"></div>
+    <div class="dot-glow dot-glow-3"></div>
+    <canvas id="particle-canvas"></canvas>
+
+    <!-- 内容 -->
+    <div class="content">
+        <div class="logo-text">Sparkit</div>
+        <div class="subtitle">通用开发框架</div>
+        <div class="divider"></div>
+        <div class="tagline">Spring Boot 3.5 · Java 17 · MySQL 5.5-8.0 · NuxtJS 3</div>
+
+        <div class="info-cards">
+            <div class="info-card">
+                <div class="label">API 文档</div>
+                <div class="value"><a href="/doc.html" target="_blank">/doc.html</a></div>
+            </div>
+            <div class="info-card">
+                <div class="label">API 版本</div>
+                <div class="value">v1</div>
+            </div>
+            <div class="info-card">
+                <div class="label">服务状态</div>
+                <div class="value" style="color: #22c55e;">● 运行中</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">© 2026 Sparkit Framework</div>
+
+    <!-- 粒子动画 -->
+    <script>
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        let mouseX = 0, mouseY = 0;
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 0.5;
+                this.speedX = (Math.random() - 0.5) * 0.4;
+                this.speedY = (Math.random() - 0.5) * 0.4;
+                this.opacity = Math.random() * 0.5 + 0.1;
+            }
+
+            update() {
+                // 鼠标附近有点吸引效果
+                const dx = mouseX - this.x;
+                const dy = mouseY - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < 200) {
+                    const force = (200 - dist) / 200 * 0.02;
+                    this.speedX += dx * force * 0.001;
+                    this.speedY += dy * force * 0.001;
+                }
+
+                // 限制速度
+                const maxSpeed = 0.6;
+                const spd = Math.sqrt(this.speedX * this.speedX + this.speedY * this.speedY);
+                if (spd > maxSpeed) {
+                    this.speedX = (this.speedX / spd) * maxSpeed;
+                    this.speedY = (this.speedY / spd) * maxSpeed;
+                }
+
+                this.x += this.speedX;
+                this.y += this.speedY;
+
+                // 阻尼
+                this.speedX *= 0.98;
+                this.speedY *= 0.98;
+
+                if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+                    this.reset();
+                }
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(100, 180, 255, ${this.opacity})`;
+                ctx.fill();
+            }
+        }
+
+        // 创建粒子
+        const count = Math.min(80, Math.floor(canvas.width * canvas.height / 15000));
+        for (let i = 0; i < count; i++) {
+            particles.push(new Particle());
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let p of particles) {
+                p.update();
+                p.draw();
+            }
+
+            // 画连接线
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 120) {
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.strokeStyle = `rgba(100, 180, 255, ${0.08 * (1 - dist / 120)})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>

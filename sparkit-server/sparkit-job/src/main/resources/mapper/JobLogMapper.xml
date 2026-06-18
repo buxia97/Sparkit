@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sparkit.job.mapper.JobLogMapper">
+
+    <select id="countByJob" resultType="java.util.Map">
+        SELECT
+            j.job_name AS jobName,
+            j.job_group AS jobGroup,
+            COUNT(l.id) AS totalCount,
+            SUM(CASE WHEN l.status = 1 THEN 1 ELSE 0 END) AS successCount,
+            SUM(CASE WHEN l.status = 0 THEN 1 ELSE 0 END) AS failCount,
+            AVG(l.duration) AS avgDuration
+        FROM sparkit_job j
+        LEFT JOIN sparkit_job_log l ON j.id = l.job_id
+        <where>
+            <if test="startTime != null and startTime != ''">
+                AND l.create_time &gt;= #{startTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                AND l.create_time &lt;= #{endTime}
+            </if>
+        </where>
+        GROUP BY j.id, j.job_name, j.job_group
+        ORDER BY totalCount DESC
+    </select>
+
+    <select id="successRate" resultType="java.util.Map">
+        SELECT
+            COUNT(*) AS totalCount,
+            SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) AS successCount,
+            SUM(CASE WHEN status = 0 THEN 1 ELSE 0 END) AS failCount,
+            ROUND(SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) AS successRate
+        FROM sparkit_job_log
+        <where>
+            <if test="startTime != null and startTime != ''">
+                AND create_time &gt;= #{startTime}
+            </if>
+            <if test="endTime != null and endTime != ''">
+                AND create_time &lt;= #{endTime}
+            </if>
+        </where>
+    </select>
+
+</mapper>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sparkit.ai.mapper.AiGenerationMapper">
+
+    <select id="countByModel" resultType="java.util.Map">
+        SELECT
+            m.model_name AS modelName,
+            m.provider AS provider,
+            COUNT(g.id) AS totalCount,
+            COALESCE(SUM(g.tokens_used), 0) AS totalTokens,
+            AVG(g.duration) AS avgDuration
+        FROM sparkit_ai_model m
+        LEFT JOIN sparkit_ai_generation g ON m.id = g.model_id
+        <if test="startTime != null and startTime != ''">
+            AND g.create_time &gt;= #{startTime}
+        </if>
+        <if test="endTime != null and endTime != ''">
+            AND g.create_time &lt;= #{endTime}
+        </if>
+        WHERE m.deleted = 0
+        GROUP BY m.id, m.model_name, m.provider
+        ORDER BY totalCount DESC
+    </select>
+
+</mapper>
