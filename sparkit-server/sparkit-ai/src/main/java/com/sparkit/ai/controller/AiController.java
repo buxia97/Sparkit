@@ -4,11 +4,16 @@ import com.sparkit.common.model.PageQuery;
 import com.sparkit.common.model.PageResult;
 import com.sparkit.common.model.R;
 import com.sparkit.ai.model.entity.AiGeneration;
+import com.sparkit.ai.model.entity.AiMessage;
 import com.sparkit.ai.model.entity.AiModel;
+import com.sparkit.ai.model.entity.AiSession;
+import com.sparkit.ai.service.AiChatService;
 import com.sparkit.ai.service.AiGenerationService;
 import com.sparkit.ai.service.AiModelService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
 import java.util.Map;
@@ -23,6 +28,7 @@ public class AiController {
 
     private final AiModelService modelService;
     private final AiGenerationService generationService;
+    private final AiChatService chatService;
 
     // ============ 模型管理 ============
 
@@ -53,6 +59,47 @@ public class AiController {
     public R<?> modelDelete(@PathVariable Long id) {
         modelService.removeById(id);
         return R.ok();
+    }
+
+    // ============ 对话 ============
+
+    @PostMapping("/chat")
+    public R<Map<String, Object>> chat(@RequestBody Map<String, Object> params) {
+        Long sessionId = params.get("sessionId") != null ? ((Number) params.get("sessionId")).longValue() : null;
+        String provider = (String) params.get("provider");
+        String model = (String) params.get("model");
+        String content = (String) params.get("content");
+        Map<String, Object> result = chatService.chat(sessionId, provider, model, content);
+        return result.containsKey("error") ? R.fail((String) result.get("error")) : R.ok(result);
+    }
+
+    @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter chatStream(@RequestBody Map<String, Object> params) {
+        Long sessionId = params.get("sessionId") != null ? ((Number) params.get("sessionId")).longValue() : null;
+        String provider = (String) params.get("provider");
+        String model = (String) params.get("model");
+        String content = (String) params.get("content");
+        return chatService.chatStream(sessionId, provider, model, content);
+    }
+
+    @GetMapping("/models/available")
+    public R<List<Map<String, Object>>> availableModels() {
+        return R.ok(chatService.getModels());
+    }
+
+    // ============ 会话管理 ============
+
+    @PostMapping("/sessions")
+    public R<AiSession> createSession(@RequestBody Map<String, Object> params) {
+        Long userId = params.get("userId") != null ? ((Number) params.get("userId")).longValue() : null;
+        String provider = (String) params.get("provider");
+        String sessionName = (String) params.get("sessionName");
+        return R.ok(chatService.createSession(userId, provider, sessionName));
+    }
+
+    @GetMapping("/sessions/{sessionId}/messages")
+    public R<List<AiMessage>> sessionMessages(@PathVariable Long sessionId) {
+        return R.ok(chatService.getSessionMessages(sessionId));
     }
 
     // ============ 生成记录与统计 ============

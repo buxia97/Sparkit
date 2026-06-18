@@ -2,8 +2,10 @@ package com.sparkit.user.controller;
 
 import com.sparkit.common.model.R;
 import com.sparkit.user.model.entity.UserSocial;
+import com.sparkit.user.service.EmailService;
 import com.sparkit.user.service.UserService;
 import com.sparkit.user.service.UserSocialService;
+import com.sparkit.user.strategy.WechatLoginStrategy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,6 +21,7 @@ public class UserController {
 
     private final UserService userService;
     private final UserSocialService userSocialService;
+    private final WechatLoginStrategy wechatLoginStrategy;
 
     /** 发送验证码 */
     @PostMapping("/verify-code")
@@ -53,7 +56,39 @@ public class UserController {
         return R.ok(userService.loginByPassword(params.get("account"), params.get("password")));
     }
 
-    /** 社交登录回调 */
+    /** 获取社交登录授权 URL */
+    @GetMapping("/social/authorize-url")
+    public R<Map<String, String>> getSocialAuthorizeUrl(
+            @RequestParam String platform,
+            @RequestParam String redirectUri,
+            @RequestParam(required = false) String state) {
+        if (state == null) state = java.util.UUID.randomUUID().toString().replace("-", "");
+        String url = userService.getSocialAuthorizeUrl(platform, redirectUri, state);
+        return R.ok(Map.of("url", url, "state", state));
+    }
+
+    /** OAuth 回调登录（完整 OAuth 流程） */
+    @PostMapping("/login/social-oauth")
+    public R<Map<String, Object>> loginBySocialOAuth(@RequestBody Map<String, String> params) {
+        return R.ok(userService.loginBySocial(
+                params.get("platform"),
+                params.get("code"),
+                params.get("redirectUri")));
+    }
+
+    /** 微信小程序登录 */
+    @PostMapping("/login/wechat-mini")
+    public R<Map<String, Object>> loginByWechatMini(@RequestBody Map<String, String> params) {
+        Map<String, Object> sessionResult = wechatLoginStrategy.miniProgramLogin(params.get("code"));
+        if (sessionResult.containsKey("error")) {
+            return R.fail(400, (String) sessionResult.get("error"));
+        }
+        String openid = (String) sessionResult.get("openid");
+        String unionid = (String) sessionResult.get("unionid");
+        return R.ok(userService.loginBySocial("wechat", openid, unionid, null, null));
+    }
+
+    /** 社交登录（旧版兼容：直接传入 openid） */
     @PostMapping("/login/social")
     public R<Map<String, Object>> loginBySocial(@RequestBody Map<String, String> params) {
         return R.ok(userService.loginBySocial(

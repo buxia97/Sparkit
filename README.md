@@ -38,7 +38,7 @@ Sparkit/
 │   ├── sparkit-news/               # 新闻模块
 │   ├── sparkit-generator/          # 代码生成器
 │   ├── sparkit-job/                # 定时任务模块
-│   └── sparkit-mdmin/              # 管理后台管理后台
+│   └── sparkit-start/              # 管理后台管理后台
 ├── sparkit-admin-web/              # 管理中心前端 NuxtJS 3 + Vue 3 工程
 ├── sparkit-web/                    # Web 前端 NuxtJS 3 工程
 ├── sparkit-app/                    # App 端 UniApp 工程

@@ -390,6 +390,8 @@ CREATE TABLE `sparkit_file` (
   `chunk_size` bigint(20) DEFAULT NULL COMMENT '分片大小（字节）',
   `upload_id` varchar(128) DEFAULT NULL COMMENT '分片上传任务ID（云存储返回）',
   `upload_by` varchar(64) DEFAULT NULL COMMENT '上传人',
+  `thumbnail_path` varchar(500) DEFAULT NULL COMMENT '视频缩略图路径',
+  `compressed_path` varchar(500) DEFAULT NULL COMMENT '压缩后文件路径',
   `create_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` timestamp NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`file_id`),
@@ -1241,4 +1243,7 @@ INSERT INTO `sparkit_config` (`config_group`, `config_key`, `config_name`, `conf
 ('system', 'sys.app.name', '应用名称', 'Sparkit', 'text', 1),
 ('system', 'sys.app.logo', '应用Logo', '/static/logo.png', 'image', 1),
 ('security', 'security.login.retry_max', '登录最大重试次数', '5', 'number', 1),
-('security', 'security.login.lock_minutes', '登录锁定分钟数', '30', 'number', 1);
+('security', 'security.login.lock_minutes', '登录锁定分钟数', '30', 'number', 1),
+('storage', 'storage.image_compress_enabled', '图片压缩开关', 'false', 'switch', 1),
+('storage', 'storage.image_compress_quality', '图片压缩质量', '0.8', 'number', 1),
+('storage', 'storage.video_transcode_enabled', '视频转码开关', 'false', 'switch', 1);

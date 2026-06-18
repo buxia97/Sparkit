@@ -59,6 +59,12 @@
 
           <el-table :data="tableData" v-loading="loading" stripe>
             <el-table-column prop="id" label="ID" width="80" />
+            <el-table-column label="缩略图" width="80" align="center">
+              <template #default="{ row }">
+                <img v-if="row.thumbnailPath" :src="`/api/v1/public/storage/thumbnail/${row.id}`" class="file-thumbnail" />
+                <span v-else class="text-secondary">-</span>
+              </template>
+            </el-table-column>
             <el-table-column prop="originalName" label="文件名" min-width="200" show-overflow-tooltip />
             <el-table-column prop="fileSize" label="文件大小" width="100">
               <template #default="{ row }">{{ formatSize(row.fileSize) }}</template>
@@ -441,3 +447,13 @@ const handleConfigDelete = (row) => {
   }).catch(() => {})
 }
 </script>
+
+<style scoped>
+.file-thumbnail {
+  width: 60px;
+  height: 45px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #e4e7ed;
+}
+</style>

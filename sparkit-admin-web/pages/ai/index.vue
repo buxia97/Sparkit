@@ -20,9 +20,14 @@
             <el-table-column prop="id" label="ID" width="80" />
             <el-table-column prop="modelName" label="模型名称" min-width="150" />
             <el-table-column prop="modelCode" label="模型编码" width="150" />
-            <el-table-column prop="provider" label="提供商" width="120">
+            <el-table-column prop="provider" label="提供商" width="110">
               <template #default="{ row }">
-                <span class="tag-info">{{ row.provider }}</span>
+                <span class="tag-info">{{ providerMap[row.provider] || row.provider }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="modelType" label="类型" width="100">
+              <template #default="{ row }">
+                <span class="tag-info">{{ row.modelType || 'text' }}</span>
               </template>
             </el-table-column>
             <el-table-column prop="status" label="状态" width="80">
@@ -71,7 +76,7 @@
 
           <el-table :data="genData" v-loading="genLoading" stripe>
             <el-table-column prop="id" label="ID" width="80" />
-            <el-table-column prop="modelName" label="模型" width="120" />
+            <el-table-column prop="modelType" label="模型" width="120" />
             <el-table-column prop="prompt" label="输入提示" min-width="200" show-overflow-tooltip />
             <el-table-column prop="tokensUsed" label="消耗Token" width="100" align="center" />
             <el-table-column prop="status" label="状态" width="90">
@@ -118,33 +123,79 @@
     </el-card>
 
     <!-- 模型弹窗 -->
-    <el-dialog v-model="modelDialogVisible" :title="modelDialogTitle" width="600px" destroy-on-close>
-      <el-form ref="modelFormRef" :model="modelForm" :rules="modelFormRules" label-width="100px">
-        <el-form-item label="模型名称" prop="modelName">
-          <el-input v-model="modelForm.modelName" placeholder="请输入模型名称" />
+    <el-dialog v-model="modelDialogVisible" :title="modelDialogTitle" width="650px" destroy-on-close>
+      <el-form ref="modelFormRef" :model="modelForm" :rules="modelFormRules" label-width="110px">
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="模型名称" prop="modelName">
+              <el-input v-model="modelForm.modelName" placeholder="例如: deepseek-chat" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="模型编码" prop="modelCode">
+              <el-input v-model="modelForm.modelCode" placeholder="唯一编码" :disabled="!!modelForm.id" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="提供商" prop="provider">
+              <el-select v-model="modelForm.provider" placeholder="请选择提供商" style="width: 100%;">
+                <el-option label="DeepSeek" value="deepseek" />
+                <el-option label="阿里百炼" value="aliyun-bailian" />
+                <el-option label="小米大模型" value="xiaomi" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="模型类型" prop="modelType">
+              <el-select v-model="modelForm.modelType" placeholder="请选择类型" style="width: 100%;">
+                <el-option label="文本(text)" value="text" />
+                <el-option label="视觉(vision)" value="vision" />
+                <el-option label="音频(audio)" value="audio" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-form-item label="API Base URL" prop="apiBase">
+          <el-input v-model="modelForm.apiBase" placeholder="例如: https://api.deepseek.com" />
         </el-form-item>
-        <el-form-item label="模型编码" prop="modelCode">
-          <el-input v-model="modelForm.modelCode" placeholder="请输入模型编码" :disabled="!!modelForm.id" />
-        </el-form-item>
-        <el-form-item label="提供商" prop="provider">
-          <el-select v-model="modelForm.provider" placeholder="请选择提供商" style="width: 100%;">
-            <el-option label="OpenAI" value="openai" />
-            <el-option label="Azure OpenAI" value="azure" />
-            <el-option label="百度文心" value="baidu" />
-            <el-option label="阿里通义" value="alibaba" />
-            <el-option label="讯飞星火" value="xunfei" />
-            <el-option label="DeepSeek" value="deepseek" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="API地址" prop="apiUrl">
-          <el-input v-model="modelForm.apiUrl" placeholder="请输入API地址" />
-        </el-form-item>
-        <el-form-item label="API密钥" prop="apiKey">
-          <el-input v-model="modelForm.apiKey" type="password" placeholder="请输入API密钥" show-password />
-        </el-form-item>
-        <el-form-item label="排序" prop="sort">
-          <el-input-number v-model="modelForm.sort" :min="0" :max="999" />
-        </el-form-item>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="API Key" prop="apiKey">
+              <el-input v-model="modelForm.apiKey" type="password" placeholder="请输入API Key" show-password />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="API Secret" prop="apiSecret">
+              <el-input v-model="modelForm.apiSecret" type="password" placeholder="可选" show-password />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="模型版本" prop="modelVersion">
+              <el-input v-model="modelForm.modelVersion" placeholder="例如: v1" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="最大Token" prop="maxTokens">
+              <el-input-number v-model="modelForm.maxTokens" :min="1" :max="131072" placeholder="默认" style="width: 100%;" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="12">
+            <el-form-item label="Temperature" prop="temperature">
+              <el-input-number v-model="modelForm.temperature" :min="0" :max="2" :step="0.1" :precision="1" placeholder="默认" style="width: 100%;" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="排序" prop="sort">
+              <el-input-number v-model="modelForm.sort" :min="0" :max="999" style="width: 100%;" />
+            </el-form-item>
+          </el-col>
+        </el-row>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="modelForm.status">
             <el-radio :value="1">启用</el-radio>
@@ -168,7 +219,7 @@
           </div>
           <div class="detail-row">
             <span class="detail-label">模型</span>
-            <span class="detail-value">{{ currentGen.modelName }}</span>
+            <span class="detail-value">{{ currentGen.modelType }}</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">消耗Token</span>
@@ -188,7 +239,7 @@
           </div>
           <div class="detail-row">
             <span class="detail-label">生成结果</span>
-            <span class="detail-value">{{ currentGen.result || '-' }}</span>
+            <span class="detail-value">{{ currentGen.response || '-' }}</span>
           </div>
           <div class="detail-row">
             <span class="detail-label">生成时间</span>
@@ -221,6 +272,12 @@ onMounted(() => {
 
 const activeTab = ref('models')
 
+const providerMap = {
+  'deepseek': 'DeepSeek',
+  'aliyun-bailian': '阿里百炼',
+  'xiaomi': '小米大模型'
+}
+
 // 模型
 const modelData = ref([])
 const modelLoading = ref(false)
@@ -239,16 +296,26 @@ const modelDialogVisible = ref(false)
 const modelDialogTitle = ref('新增模型')
 const modelFormRef = ref(null)
 const modelSubmitting = ref(false)
-const modelForm = reactive({ id: '', modelName: '', modelCode: '', provider: '', apiUrl: '', apiKey: '', sort: 0, status: 1 })
+const modelForm = reactive({
+  id: '', modelName: '', modelCode: '', provider: '', modelType: 'text',
+  apiBase: '', apiKey: '', apiSecret: '', modelVersion: '',
+  maxTokens: null, temperature: null, sort: 0, status: 1
+})
 const modelFormRules = {
   modelName: [{ required: true, message: '请输入模型名称', trigger: 'blur' }],
   modelCode: [{ required: true, message: '请输入模型编码', trigger: 'blur' }],
   provider: [{ required: true, message: '请选择提供商', trigger: 'change' }]
 }
 
+const defaultModelForm = {
+  id: '', modelName: '', modelCode: '', provider: '', modelType: 'text',
+  apiBase: '', apiKey: '', apiSecret: '', modelVersion: '',
+  maxTokens: null, temperature: null, sort: 0, status: 1
+}
+
 const handleModelAdd = () => {
   modelDialogTitle.value = '新增模型'
-  Object.assign(modelForm, { id: '', modelName: '', modelCode: '', provider: '', apiUrl: '', apiKey: '', sort: 0, status: 1 })
+  Object.assign(modelForm, { ...defaultModelForm })
   modelFormRef.value?.resetFields()
   modelDialogVisible.value = true
 }
@@ -256,9 +323,11 @@ const handleModelAdd = () => {
 const handleModelEdit = (row) => {
   modelDialogTitle.value = '编辑模型'
   Object.assign(modelForm, {
-    id: row.id, modelName: row.modelName, modelCode: row.modelCode,
-    provider: row.provider, apiUrl: row.apiUrl || '', apiKey: row.apiKey || '',
-    sort: row.sort || 0, status: row.status
+    id: row.id, modelName: row.modelName || '', modelCode: row.modelCode || '',
+    provider: row.provider || '', modelType: row.modelType || 'text',
+    apiBase: row.apiBase || '', apiKey: row.apiKey || '', apiSecret: row.apiSecret || '',
+    modelVersion: row.modelVersion || '', maxTokens: row.maxTokens || null,
+    temperature: row.temperature || null, sort: row.sort || 0, status: row.status
   })
   modelFormRef.value?.resetFields()
   modelDialogVisible.value = true

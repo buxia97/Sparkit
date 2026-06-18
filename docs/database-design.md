@@ -308,6 +308,9 @@
 | payment | pay.wechat.mch_id | 微信商户号 | 1234567890 | text |
 | security | security.login.retry_max | 登录最大重试次数 | 5 | number |
 | security | security.login.lock_minutes | 登录锁定分钟数 | 30 | number |
+| storage | storage.image_compress_enabled | 图片压缩开关 | false | switch |
+| storage | storage.image_compress_quality | 图片压缩质量 | 0.8 | number |
+| storage | storage.video_transcode_enabled | 视频转码开关 | false | switch |
 
 ---
 
@@ -534,6 +537,8 @@
 | chunk_size | bigint(20) | 否 | 分片大小（字节） |
 | upload_id | varchar(128) | 否 | 分片上传任务 ID（云存储返回） |
 | upload_by | varchar(64) | 否 | 上传人 |
+| thumbnail_path | varchar(500) | 否 | 视频缩略图路径（首帧提取） |
+| compressed_path | varchar(500) | 否 | 压缩/转码后文件路径 |
 | create_time | datetime | 是 | 创建时间 |
 | update_time | datetime | 否 | 更新时间 |
 

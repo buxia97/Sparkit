@@ -18,7 +18,10 @@ export const menuConfig = [
       { title: '岗位管理', icon: 'Briefcase', path: '/system/post', perm: 'system:post:list' },
       { title: '系统配置', icon: 'Tools', path: '/system/config', perm: 'system:config:list' },
       { title: '字典管理', icon: 'Collection', path: '/system/dict', perm: 'system:dict:list' },
-      { title: '地区管理', icon: 'Location', path: '/system/region', perm: 'system:region:list' }
+      { title: '地区管理', icon: 'Location', path: '/system/region', perm: 'system:region:list' },
+      { title: '国际化管理', icon: 'ChatLineSquare', path: '/system/i18n', perm: 'system:i18n:list' },
+      { title: '导入导出', icon: 'Upload', path: '/system/import-export', perm: 'system:import-export:list' },
+      { title: '主题皮肤', icon: 'Brush', path: '/system/theme', perm: 'system:theme:list' }
     ]
   },
   {
@@ -73,6 +76,18 @@ export const menuConfig = [
     perm: 'generator:list'
   },
   {
+    title: '多租户管理',
+    icon: 'Connection',
+    path: '/tenant',
+    perm: 'tenant:list'
+  },
+  {
+    title: '数据备份',
+    icon: 'FolderOpened',
+    path: '/backup',
+    perm: 'backup:list'
+  },
+  {
     title: '日志审计',
     icon: 'Tickets',
     perm: 'monitor',
@@ -94,6 +109,9 @@ export const searchData = [
   { title: '系统配置', path: '/system/config', icon: 'Tools', keywords: ['配置', 'config', '参数'] },
   { title: '字典管理', path: '/system/dict', icon: 'Collection', keywords: ['字典', 'dict'] },
   { title: '地区管理', path: '/system/region', icon: 'Location', keywords: ['地区', 'region'] },
+  { title: '国际化管理', path: '/system/i18n', icon: 'ChatLineSquare', keywords: ['国际化', 'i18n', '翻译', '多语言'] },
+  { title: '导入导出', path: '/system/import-export', icon: 'Upload', keywords: ['导入', '导出', 'import', 'export'] },
+  { title: '主题皮肤', path: '/system/theme', icon: 'Brush', keywords: ['主题', '皮肤', 'theme', '配色', '暗黑'] },
   { title: '用户管理', path: '/user', icon: 'UserFilled', keywords: ['用户', 'user', 'C端用户'] },
   { title: '新闻分类', path: '/news/category', icon: 'CollectionTag', keywords: ['新闻分类', 'category'] },
   { title: '新闻文章', path: '/news/article', icon: 'Notebook', keywords: ['新闻', 'article', '文章'] },
@@ -103,6 +121,8 @@ export const searchData = [
   { title: 'AI 管理', path: '/ai', icon: 'Cpu', keywords: ['AI', 'ai', '大模型'] },
   { title: '定时任务', path: '/job', icon: 'Clock', keywords: ['任务', 'job', '定时'] },
   { title: '代码生成器', path: '/generator', icon: 'EditPen', keywords: ['代码生成', 'generator', 'gen'] },
+  { title: '多租户管理', path: '/tenant', icon: 'Connection', keywords: ['多租户', 'tenant', '租户'] },
+  { title: '数据备份', path: '/backup', icon: 'FolderOpened', keywords: ['备份', 'backup', '恢复', '数据库'] },
   { title: '操作日志', path: '/monitor/operlog', icon: 'List', keywords: ['操作日志', 'operlog', '审计'] },
   { title: '登录日志', path: '/monitor/loginlog', icon: 'UserFilled', keywords: ['登录日志', 'loginlog'] }
 ]

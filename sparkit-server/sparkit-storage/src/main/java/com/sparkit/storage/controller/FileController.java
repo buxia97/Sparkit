@@ -5,6 +5,7 @@ import com.sparkit.common.model.PageResult;
 import com.sparkit.common.model.R;
 import com.sparkit.storage.model.entity.FileInfo;
 import com.sparkit.storage.service.FileService;
+import com.sparkit.storage.service.MediaProcessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -17,6 +18,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Map;
 
 /**
@@ -27,6 +30,7 @@ import java.util.Map;
 public class FileController {
 
     private final FileService fileService;
+    private final MediaProcessService mediaProcessService;
 
     /** 文件上传 */
     @PostMapping("/api/v1/public/storage/upload")
@@ -117,6 +121,26 @@ public class FileController {
 
         try (OutputStream os = response.getOutputStream()) {
             byte[] data = fileService.getFileBytes(fileInfo);
+            os.write(data);
+            os.flush();
+        }
+    }
+
+    /** 视频缩略图预览 */
+    @GetMapping("/api/v1/public/storage/thumbnail/{id}")
+    public void thumbnail(@PathVariable Long id, HttpServletResponse response) throws IOException {
+        FileInfo fileInfo = fileService.getById(id);
+        if (fileInfo == null || fileInfo.getThumbnailPath() == null) {
+            response.setStatus(404);
+            return;
+        }
+        response.setContentType("image/jpeg");
+        response.setHeader("Content-Disposition", "inline; filename=\"thumb_" +
+                URLEncoder.encode(fileInfo.getOriginalName(), StandardCharsets.UTF_8) + ".jpg\"");
+
+        try (OutputStream os = response.getOutputStream()) {
+            byte[] data = Files.readAllBytes(Paths.get(
+                    System.getProperty("user.dir") + "/uploads/" + fileInfo.getThumbnailPath()));
             os.write(data);
             os.flush();
         }

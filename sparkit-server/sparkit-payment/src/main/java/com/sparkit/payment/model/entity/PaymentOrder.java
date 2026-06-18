@@ -34,6 +34,8 @@ public class PaymentOrder extends BaseEntity {
     private String subject;
     private String body;
     private Integer status;
+    private String openid;
+    private String transactionId;
     private String notifyUrl;
     private String returnUrl;
     private String idempotentKey;

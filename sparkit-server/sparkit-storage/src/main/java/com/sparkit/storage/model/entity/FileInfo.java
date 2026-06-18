@@ -31,6 +31,10 @@ public class FileInfo extends BaseEntity {
     private String storageSource;
     private String bucket;
     private Integer status;
+    /** 缩略图路径（视频首帧） */
+    private String thumbnailPath;
+    /** 压缩后文件路径 */
+    private String compressedPath;
     @TableLogic
     private Integer deleted;
 }

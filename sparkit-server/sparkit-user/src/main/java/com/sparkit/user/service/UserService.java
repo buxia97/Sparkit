@@ -14,6 +14,9 @@ import com.sparkit.framework.security.JwtTokenService;
 import com.sparkit.framework.security.LoginUser;
 import com.sparkit.user.mapper.UserMapper;
 import com.sparkit.user.model.entity.User;
+import com.sparkit.user.strategy.SocialLoginStrategy;
+import com.sparkit.user.strategy.SocialLoginStrategyFactory;
+import com.sparkit.user.strategy.QQLoginStrategy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -36,6 +39,9 @@ public class UserService extends ServiceImpl<UserMapper, User> {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenService jwtTokenService;
     private final RedisTemplate<String, Object> redisTemplate;
+    private final SmsService smsService;
+    private final EmailService emailService;
+    private final SocialLoginStrategyFactory socialLoginStrategyFactory;
 
     /**
      * 手机号注册
@@ -150,8 +156,16 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         redisTemplate.opsForValue().set(codeKey, code, Constants.VERIFY_CODE_EXPIRE, TimeUnit.SECONDS);
         redisTemplate.opsForValue().set(limitKey, "1", Constants.VERIFY_CODE_INTERVAL, TimeUnit.SECONDS);
 
-        log.info("发送验证码: target={}, type={}, code={}", target, type, code);
-        // TODO: 实际发送（短信/邮件）
+        // 实际发送
+        boolean sent = false;
+        if ("phone".equals(type)) {
+            sent = smsService.sendVerifyCode(target, code);
+        } else if ("email".equals(type)) {
+            sent = emailService.sendVerifyCode(target, code);
+        }
+        if (!sent) {
+            log.warn("验证码发送失败，但仍存储到 Redis: target={}, type={}, code={}", target, type, code);
+        }
     }
 
     private void verifyCode(String target, String code) {
@@ -209,12 +223,47 @@ public class UserService extends ServiceImpl<UserMapper, User> {
     }
 
     /**
-     * 社交登录（微信/QQ/微博/GitHub/钉钉等）
+     * 社交登录（微信/QQ/微博/GitHub/钉钉/企业微信等）
+     * 通过授权码完整 OAuth 流程
      */
     @Transactional
-    public Map<String, Object> loginBySocial(String platform, String openid, String unionid,
-                                              String nickname, String avatar) {
-        // 通过 openid 查找已绑定用户
+    public Map<String, Object> loginBySocial(String platform, String code, String redirectUri) {
+        SocialLoginStrategy strategy = socialLoginStrategyFactory.getStrategy(platform);
+
+        // 1. 通过 code 获取 access_token
+        Map<String, Object> tokenResult = strategy.getAccessToken(code, redirectUri);
+        if (tokenResult.containsKey("error")) {
+            throw new BusinessException(ErrorCode.SOCIAL_LOGIN_FAIL, (String) tokenResult.get("error"));
+        }
+
+        String accessToken = (String) tokenResult.get("access_token");
+        String refreshToken = (String) tokenResult.get("refresh_token");
+        String openid = (String) tokenResult.get("openid");
+        String unionid = (String) tokenResult.get("unionid");
+
+        // QQ 需要额外获取 openid
+        if ("qq".equals(platform) && openid == null) {
+            QQLoginStrategy qqStrategy = (QQLoginStrategy) strategy;
+            Map<String, Object> openIdResult = qqStrategy.getOpenId(accessToken);
+            openid = (String) openIdResult.get("openid");
+        }
+
+        // 2. 通过 access_token 获取用户信息
+        Map<String, Object> userInfo = strategy.getUserInfo(accessToken, openid);
+        String nickname = null;
+        String avatar = null;
+        if (!userInfo.containsKey("error")) {
+            nickname = (String) userInfo.getOrDefault("nickname",
+                    userInfo.getOrDefault("screen_name",
+                            userInfo.getOrDefault("login",
+                                    userInfo.getOrDefault("name", platform + "用户"))));
+            avatar = (String) userInfo.getOrDefault("avatar_url",
+                    userInfo.getOrDefault("avatar_large",
+                            userInfo.getOrDefault("profile_image_url",
+                                    userInfo.getOrDefault("avatar", null))));
+        }
+
+        // 3. 查找或创建用户
         User user = getOne(new LambdaQueryWrapper<User>()
                 .eq(User::getOpenid, openid));
         if (user == null && unionid != null) {
@@ -225,7 +274,44 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         if (user == null) {
             // 自动注册
             user = new User();
-            user.setUsername(platform + "_" + openid.substring(0, 8));
+            user.setUsername(platform + "_" + openid.substring(0, Math.min(openid.length(), 8)));
+            user.setNickname(nickname != null ? nickname : platform + "用户");
+            user.setAvatar(avatar);
+            user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
+            user.setOpenid(openid);
+            user.setUnionid(unionid);
+            user.setStatus(1);
+            user.setRegisterSource(platform);
+            save(user);
+        } else {
+            // 更新用户信息
+            if (nickname != null) user.setNickname(nickname);
+            if (avatar != null) user.setAvatar(avatar);
+            if (unionid != null) user.setUnionid(unionid);
+            updateById(user);
+        }
+
+        checkUserStatus(user);
+        updateLoginInfo(user);
+        return buildLoginResult(user);
+    }
+
+    /**
+     * 旧版社交登录兼容（直接传入 openid）
+     */
+    @Transactional
+    public Map<String, Object> loginBySocial(String platform, String openid, String unionid,
+                                              String nickname, String avatar) {
+        User user = getOne(new LambdaQueryWrapper<User>()
+                .eq(User::getOpenid, openid));
+        if (user == null && unionid != null) {
+            user = getOne(new LambdaQueryWrapper<User>()
+                    .eq(User::getUnionid, unionid));
+        }
+
+        if (user == null) {
+            user = new User();
+            user.setUsername(platform + "_" + openid.substring(0, Math.min(openid.length(), 8)));
             user.setNickname(nickname != null ? nickname : platform + "用户");
             user.setAvatar(avatar);
             user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
@@ -239,5 +325,13 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         checkUserStatus(user);
         updateLoginInfo(user);
         return buildLoginResult(user);
+    }
+
+    /**
+     * 获取社交登录授权 URL
+     */
+    public String getSocialAuthorizeUrl(String platform, String redirectUri, String state) {
+        SocialLoginStrategy strategy = socialLoginStrategyFactory.getStrategy(platform);
+        return strategy.getAuthorizeUrl(redirectUri, state);
     }
 }

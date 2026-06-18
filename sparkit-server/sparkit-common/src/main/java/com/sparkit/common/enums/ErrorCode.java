@@ -31,6 +31,7 @@ public enum ErrorCode {
     EMAIL_EXISTS(10010, "邮箱已注册"),
     OLD_PASSWORD_ERROR(10011, "原密码错误"),
     USER_BLACKLIST(10012, "该账号已被限制访问"),
+    SOCIAL_LOGIN_FAIL(10013, "社交登录失败: {0}"),
 
     // 权限模块 20001+
     ROLE_EXISTS(20001, "角色名称已存在"),

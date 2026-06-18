@@ -14,6 +14,7 @@ import com.sparkit.storage.mapper.FileChunkMapper;
 import com.sparkit.storage.mapper.FileInfoMapper;
 import com.sparkit.storage.model.entity.FileChunk;
 import com.sparkit.storage.model.entity.FileInfo;
+import com.sparkit.system.service.ConfigService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -38,6 +39,8 @@ import java.util.UUID;
 public class FileService extends ServiceImpl<FileInfoMapper, FileInfo> {
 
     private final FileChunkMapper fileChunkMapper;
+    private final MediaProcessService mediaProcessService;
+    private final ConfigService configService;
 
     @Value("${sparkit.storage.local-path:./uploads}")
     private String localPath;
@@ -73,20 +76,62 @@ public class FileService extends ServiceImpl<FileInfoMapper, FileInfo> {
             File destFile = new File(localPath + "/" + relativePath);
             file.transferTo(destFile);
 
+            String contentType = file.getContentType();
+
             // 保存记录
             FileInfo fileInfo = new FileInfo();
             fileInfo.setFileName(newFileName);
             fileInfo.setOriginalName(originalName);
             fileInfo.setFilePath(relativePath);
             fileInfo.setFileUrl("/uploads/" + relativePath);
-            fileInfo.setFileType(file.getContentType());
+            fileInfo.setFileType(contentType);
             fileInfo.setFileExt(ext);
             fileInfo.setFileSize(file.getSize());
             fileInfo.setFileMd5(md5);
             fileInfo.setStorageSource(defaultSource);
             fileInfo.setStatus(1);
-            save(fileInfo);
 
+            // 图片压缩处理
+            if (mediaProcessService.isImage(contentType)) {
+                String compressEnabled = configService.getConfigValue("storage.image_compress_enabled");
+                if ("true".equals(compressEnabled)) {
+                    String qualityStr = configService.getConfigValue("storage.image_compress_quality");
+                    float quality = 0.8f;
+                    try {
+                        if (qualityStr != null && !qualityStr.isBlank()) {
+                            quality = Float.parseFloat(qualityStr);
+                        }
+                    } catch (NumberFormatException ignored) {
+                    }
+                    String compressedPath = mediaProcessService.compressImage(
+                            destFile.getAbsolutePath(), quality);
+                    if (compressedPath != null) {
+                        fileInfo.setCompressedPath(compressedPath);
+                    }
+                }
+            }
+
+            // 视频处理：提取首帧 + 转码
+            if (mediaProcessService.isVideo(contentType)) {
+                // 提取首帧
+                String thumbnailPath = mediaProcessService.extractFirstFrame(
+                        destFile.getAbsolutePath());
+                if (thumbnailPath != null) {
+                    fileInfo.setThumbnailPath(thumbnailPath);
+                }
+
+                // 视频转码
+                String transcodeEnabled = configService.getConfigValue("storage.video_transcode_enabled");
+                if ("true".equals(transcodeEnabled)) {
+                    String transcodedPath = mediaProcessService.transcodeVideo(
+                            destFile.getAbsolutePath());
+                    if (transcodedPath != null) {
+                        fileInfo.setCompressedPath(transcodedPath);
+                    }
+                }
+            }
+
+            save(fileInfo);
             return fileInfo;
         } catch (IOException e) {
             log.error("文件上传失败", e);
@@ -204,9 +249,73 @@ public class FileService extends ServiceImpl<FileInfoMapper, FileInfo> {
         fileInfo.setFileMd5(fileMd5);
         fileInfo.setStorageSource(defaultSource);
         fileInfo.setStatus(1);
+
+        String contentType = getContentTypeByExt(ext);
+
+        // 图片压缩处理
+        if (mediaProcessService.isImage(contentType)) {
+            String compressEnabled = configService.getConfigValue("storage.image_compress_enabled");
+            if ("true".equals(compressEnabled)) {
+                String qualityStr = configService.getConfigValue("storage.image_compress_quality");
+                float quality = 0.8f;
+                try {
+                    if (qualityStr != null && !qualityStr.isBlank()) {
+                        quality = Float.parseFloat(qualityStr);
+                    }
+                } catch (NumberFormatException ignored) {
+                }
+                String compressedPath = mediaProcessService.compressImage(
+                        destFile.getAbsolutePath(), quality);
+                if (compressedPath != null) {
+                    fileInfo.setCompressedPath(compressedPath);
+                }
+            }
+        }
+
+        // 视频处理：提取首帧 + 转码
+        if (mediaProcessService.isVideo(contentType)) {
+            String thumbnailPath = mediaProcessService.extractFirstFrame(
+                    destFile.getAbsolutePath());
+            if (thumbnailPath != null) {
+                fileInfo.setThumbnailPath(thumbnailPath);
+            }
+
+            String transcodeEnabled = configService.getConfigValue("storage.video_transcode_enabled");
+            if ("true".equals(transcodeEnabled)) {
+                String transcodedPath = mediaProcessService.transcodeVideo(
+                        destFile.getAbsolutePath());
+                if (transcodedPath != null) {
+                    fileInfo.setCompressedPath(transcodedPath);
+                }
+            }
+        }
+
+        fileInfo.setFileType(contentType);
         save(fileInfo);
 
         return fileInfo;
+    }
+
+    /**
+     * 根据扩展名获取 Content-Type
+     */
+    private String getContentTypeByExt(String ext) {
+        if (ext == null) return null;
+        return switch (ext.toLowerCase()) {
+            case "jpg", "jpeg" -> "image/jpeg";
+            case "png" -> "image/png";
+            case "gif" -> "image/gif";
+            case "webp" -> "image/webp";
+            case "bmp" -> "image/bmp";
+            case "svg" -> "image/svg+xml";
+            case "mp4" -> "video/mp4";
+            case "avi" -> "video/x-msvideo";
+            case "mov" -> "video/quicktime";
+            case "mkv" -> "video/x-matroska";
+            case "webm" -> "video/webm";
+            case "flv" -> "video/x-flv";
+            default -> null;
+        };
     }
 
     /**
