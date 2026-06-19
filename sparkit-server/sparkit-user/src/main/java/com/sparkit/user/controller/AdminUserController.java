@@ -16,7 +16,7 @@ import java.util.Map;
 /**
  * C端用户管理（管理端）
  */
-@RestController
+@RestController("cUserAdminController")
 @RequestMapping("/api/v1/admin/users/c")
 @RequiredArgsConstructor
 public class AdminUserController {

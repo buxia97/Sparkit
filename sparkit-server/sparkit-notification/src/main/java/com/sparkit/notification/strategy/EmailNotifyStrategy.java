@@ -1,17 +1,26 @@
 package com.sparkit.notification.strategy;
 
 import com.sparkit.notification.model.entity.NotifyTemplate;
+import com.sparkit.system.service.ConfigService;
+import jakarta.mail.internet.MimeMessage;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
 /**
- * 邮件通知策略
+ * 邮件通知策略（JavaMailSender 真实发送）
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class EmailNotifyStrategy implements NotifyStrategy {
+
+    private final JavaMailSender mailSender;
+    private final ConfigService configService;
 
     @Override
     public String getChannel() {
@@ -27,9 +36,26 @@ public class EmailNotifyStrategy implements NotifyStrategy {
     public boolean send(NotifyTemplate template, String target, Map<String, String> params) {
         String content = replaceVariables(template.getContent(), params);
         String title = replaceVariables(template.getTitle(), params);
-        log.info("邮件发送: to={}, title={}, content={}", target, title, content);
-        // 实际生产环境使用 JavaMailSender 发送
-        return true;
+
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(getFrom());
+            helper.setTo(target);
+            helper.setSubject(title);
+            helper.setText(content, true);
+            mailSender.send(message);
+            log.info("邮件发送成功: to={}, title={}", target, title);
+            return true;
+        } catch (Exception e) {
+            log.error("邮件发送失败: to={}, error={}", target, e.getMessage());
+            return false;
+        }
+    }
+
+    private String getFrom() {
+        String from = configService.getConfigValue("notification.email.from");
+        return from != null ? from : "noreply@sparkit.com";
     }
 
     private String replaceVariables(String template, Map<String, String> params) {

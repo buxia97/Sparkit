@@ -22,15 +22,16 @@ import java.time.Duration;
 import java.util.*;
 
 /**
- * 阿里云短信通知策略（真实API调用）
- * 使用阿里云短信服务 SDK 签名机制，支持自定义签名
+ * 阿里云号码认证策略（一键登录/本机号码校验）
+ * 与短信服务的区别：号码认证使用阿里云固定签名，无需用户自定义签名
+ * 使用阿里云号码认证服务 dypnsapi（Cloud Phone Number Protection）
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class SmsNotifyStrategy implements NotifyStrategy {
+public class AliyunNumberAuthNotifyStrategy implements NotifyStrategy {
 
-    private static final String ENDPOINT = "dysmsapi.aliyuncs.com";
+    private static final String ENDPOINT = "dypnsapi.aliyuncs.com";
     private static final String API_VERSION = "2017-05-25";
     private static final String SIGNATURE_METHOD = "HMAC-SHA1";
     private static final String SIGNATURE_VERSION = "1.0";
@@ -42,34 +43,40 @@ public class SmsNotifyStrategy implements NotifyStrategy {
 
     @Override
     public String getChannel() {
-        return "sms";
+        return "number_auth";
     }
 
     @Override
     public String getChannelName() {
-        return "短信通知";
+        return "阿里云号码认证";
     }
 
+    /**
+     * 发送号码认证请求（一键登录获取手机号/本机号码校验）
+     * 注意：号码认证使用阿里云固定签名，不支持自定义签名
+     *
+     * @param template 通知模板
+     * @param target   目标（accessToken，即客户端SDK获取的token）
+     * @param params   参数（action: GetMobile 或 VerifyMobile）
+     */
     @Override
     public boolean send(NotifyTemplate template, String target, Map<String, String> params) {
-        String accessKeyId = configService.getConfigValue("notification.sms.aliyun.access_key_id");
-        String accessKeySecret = configService.getConfigValue("notification.sms.aliyun.access_key_secret");
-        String signName = configService.getConfigValue("notification.sms.sign_name");
+        String accessKeyId = configService.getConfigValue("notification.number_auth.aliyun.access_key_id");
+        String accessKeySecret = configService.getConfigValue("notification.number_auth.aliyun.access_key_secret");
 
         if (accessKeyId == null || accessKeyId.isBlank() || accessKeySecret == null || accessKeySecret.isBlank()) {
-            log.warn("阿里云短信未配置 AccessKey，跳过发送: phone={}", target);
+            log.warn("阿里云号码认证未配置 AccessKey，跳过: token={}", target);
             return false;
         }
+
+        String action = params != null ? params.getOrDefault("action", "GetMobile") : "GetMobile";
 
         try {
             Map<String, String> queryParams = new TreeMap<>();
             queryParams.put("AccessKeyId", accessKeyId);
-            queryParams.put("Action", "SendSms");
+            queryParams.put("Action", action);
             queryParams.put("Format", "JSON");
-            queryParams.put("PhoneNumbers", target);
-            queryParams.put("SignName", signName != null ? signName : "Sparkit");
-            queryParams.put("TemplateCode", template.getTemplateCode());
-            queryParams.put("TemplateParam", buildTemplateParam(params));
+            queryParams.put("AccessToken", target);
             queryParams.put("RegionId", "cn-hangzhou");
             queryParams.put("SignatureMethod", SIGNATURE_METHOD);
             queryParams.put("SignatureNonce", UUID.randomUUID().toString());
@@ -83,30 +90,16 @@ public class SmsNotifyStrategy implements NotifyStrategy {
             String queryString = buildQueryString(queryParams);
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create("https://" + ENDPOINT + "/?" + queryString))
-                    .GET()
+                    .POST(HttpRequest.BodyPublishers.noBody())
                     .build();
 
             HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-            log.info("阿里云短信发送完成: phone={}, resp={}", target, response.body());
+            log.info("阿里云号码认证完成: action={}, resp={}", action, response.body());
             return response.body().contains("\"Code\":\"OK\"");
         } catch (Exception e) {
-            log.error("阿里云短信发送失败: phone={}, error={}", target, e.getMessage());
+            log.error("阿里云号码认证失败: action={}, error={}", action, e.getMessage());
             return false;
         }
-    }
-
-    private String buildTemplateParam(Map<String, String> params) {
-        if (params == null || params.isEmpty()) return "{}";
-        StringBuilder sb = new StringBuilder("{");
-        boolean first = true;
-        for (Map.Entry<String, String> entry : params.entrySet()) {
-            if (!first) sb.append(",");
-            sb.append("\"").append(entry.getKey()).append("\":\"")
-                    .append(entry.getValue()).append("\"");
-            first = false;
-        }
-        sb.append("}");
-        return sb.toString();
     }
 
     private String formatTimestamp(Date date) {
@@ -126,7 +119,7 @@ public class SmsNotifyStrategy implements NotifyStrategy {
 
     private String sign(String queryString, String keySecret) throws NoSuchAlgorithmException,
             InvalidKeyException, UnsupportedEncodingException {
-        String stringToSign = "GET&" + urlEncode("/") + "&" + urlEncode(queryString);
+        String stringToSign = "POST&" + urlEncode("/") + "&" + urlEncode(queryString);
         Mac mac = Mac.getInstance("HmacSHA1");
         SecretKeySpec keySpec = new SecretKeySpec(keySecret.getBytes(StandardCharsets.UTF_8), "HmacSHA1");
         mac.init(keySpec);

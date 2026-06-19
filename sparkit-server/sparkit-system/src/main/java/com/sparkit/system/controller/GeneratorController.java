@@ -3,9 +3,9 @@ package com.sparkit.system.controller;
 import com.sparkit.common.model.PageQuery;
 import com.sparkit.common.model.PageResult;
 import com.sparkit.common.model.R;
-import com.sparkit.system.mapper.GenTableMapper;
-import com.sparkit.system.model.entity.GenTable;
-import com.sparkit.system.service.GenTableService;
+import com.sparkit.system.mapper.SystemGenTableConfigMapper;
+import com.sparkit.system.model.entity.GenTableConfigConfig;
+import com.sparkit.system.service.GenTableConfigService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,11 +20,11 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class GeneratorController {
 
-    private final GenTableService genTableService;
-    private final GenTableMapper genTableMapper;
+    private final GenTableConfigService genTableService;
+    private final SystemGenTableConfigMapper genTableMapper;
 
     @GetMapping("/tables")
-    public R<PageResult<GenTable>> tableList(PageQuery query) {
+    public R<PageResult<GenTableConfig>> tableList(PageQuery query) {
         return R.ok(genTableService.page(query));
     }
 
@@ -40,12 +40,12 @@ public class GeneratorController {
     }
 
     @GetMapping("/tables/{id}")
-    public R<GenTable> getTable(@PathVariable Long id) {
+    public R<GenTableConfig> getTable(@PathVariable Long id) {
         return R.ok(genTableService.getById(id));
     }
 
     @PutMapping("/tables/{id}")
-    public R<?> updateTable(@PathVariable Long id, @RequestBody GenTable table) {
+    public R<?> updateTable(@PathVariable Long id, @RequestBody GenTableConfig table) {
         table.setId(id);
         genTableService.updateById(table);
         return R.ok();

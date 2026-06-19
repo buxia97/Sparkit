@@ -1,7 +1,7 @@
 package com.sparkit.system.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.sparkit.system.model.entity.GenTable;
+import com.sparkit.system.model.entity.GenTableConfig;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 
@@ -12,7 +12,7 @@ import java.util.Map;
  * 代码生成 Mapper
  */
 @Mapper
-public interface GenTableMapper extends BaseMapper<GenTable> {
+public interface SystemGenTableMapper extends BaseMapper<GenTableConfig> {
 
     @Select("SELECT TABLE_NAME AS tableName, TABLE_COMMENT AS tableComment, CREATE_TIME AS createTime " +
             "FROM information_schema.TABLES WHERE TABLE_SCHEMA = (SELECT DATABASE()) " +

@@ -4,8 +4,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.sparkit.common.model.PageQuery;
 import com.sparkit.common.model.PageResult;
-import com.sparkit.system.mapper.GenTableMapper;
-import com.sparkit.system.model.entity.GenTable;
+import com.sparkit.system.mapper.SystemGenTableMapper;
+import com.sparkit.system.model.entity.GenTableConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,14 +17,14 @@ import java.util.*;
  * 代码生成服务
  */
 @Slf4j
-@Service
+@Service("systemGenTableService")
 @RequiredArgsConstructor
-public class GenTableService extends ServiceImpl<GenTableMapper, GenTable> {
+public class GenTableService extends ServiceImpl<SystemGenTableMapper, GenTableConfig> {
 
-    private final GenTableMapper genTableMapper;
+    private final SystemGenTableMapper genTableMapper;
 
-    public PageResult<GenTable> page(PageQuery query) {
-        Page<GenTable> page = page(new Page<>(query.getPage(), query.getPageSize()));
+    public PageResult<GenTableConfig> page(PageQuery query) {
+        Page<GenTableConfig> page = page(new Page<>(query.getPage(), query.getPageSize()));
         return PageResult.of(page);
     }
 
@@ -38,7 +38,7 @@ public class GenTableService extends ServiceImpl<GenTableMapper, GenTable> {
                     .findFirst().orElse(null);
             if (dbTable == null) continue;
 
-            GenTable genTable = new GenTable();
+            GenTableConfig genTable = new GenTableConfig();
             genTable.setTableName(tableName);
             genTable.setTableComment((String) dbTable.getOrDefault("tableComment", ""));
             genTable.setClassName(toCamelCase(tableName));
@@ -50,7 +50,7 @@ public class GenTableService extends ServiceImpl<GenTableMapper, GenTable> {
     }
 
     public List<Map<String, String>> previewCode(Long tableId) {
-        GenTable table = getById(tableId);
+        GenTableConfig table = getById(tableId);
         if (table == null) return Collections.emptyList();
 
         List<Map<String, String>> files = new ArrayList<>();
@@ -68,7 +68,7 @@ public class GenTableService extends ServiceImpl<GenTableMapper, GenTable> {
     }
 
     public void generateCode(Long tableId) {
-        GenTable table = getById(tableId);
+        GenTableConfig table = getById(tableId);
         if (table == null) return;
         log.info("开始生成代码: tableName={}, className={}", table.getTableName(), table.getClassName());
         // TODO: 实际代码生成逻辑（模板引擎生成）

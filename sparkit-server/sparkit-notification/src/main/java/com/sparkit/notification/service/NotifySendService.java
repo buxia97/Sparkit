@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.sparkit.notification.model.entity.NotifyRecord;
 import com.sparkit.notification.model.entity.NotifyTemplate;
 import com.sparkit.notification.strategy.NotifyStrategy;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +18,6 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class NotifySendService {
 
     private final Map<String, NotifyStrategy> strategyMap;

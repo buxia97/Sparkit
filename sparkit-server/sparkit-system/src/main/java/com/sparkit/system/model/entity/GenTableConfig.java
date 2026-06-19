@@ -13,7 +13,7 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @TableName("sparkit_gen_table")
-public class GenTable extends BaseEntity {
+public class GenTableConfig extends BaseEntity {
 
     private static final long serialVersionUID = 1L;
 
