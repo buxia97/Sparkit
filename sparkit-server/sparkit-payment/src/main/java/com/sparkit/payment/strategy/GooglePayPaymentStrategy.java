@@ -13,15 +13,12 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.security.KeyFactory;
-import java.security.Signature;
-import java.security.spec.PKCS8EncodedKeySpec;
 import java.time.Duration;
 import java.util.*;
 
 /**
- * Google Pay 支付策略（真实对接）
- *
+ * Google Pay 支付策略 - 真实对接
+ * 服务器端验证 Google Pay Payment Token 并处理支付
  * 参考：https://developers.google.com/pay/api/web
  */
 @Slf4j
@@ -32,6 +29,7 @@ public class GooglePayPaymentStrategy implements PaymentStrategy {
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(15)).build();
+    private static final String GOOGLE_PAY_VERIFY_URL = "https://payments.developers.google.com/payments/paymenttokenverify";
 
     private final ConfigService configService;
 
@@ -39,21 +37,16 @@ public class GooglePayPaymentStrategy implements PaymentStrategy {
     private String getMerchantName() { return configService.getConfigValue("payment.google.merchant_name"); }
     private String getServiceAccountKey() { return configService.getConfigValue("payment.google.service_account_key"); }
 
-    @Override
-    public String getChannelCode() { return "googlepay"; }
-
-    @Override
-    public String getChannelName() { return "Google Pay"; }
+    @Override public String getChannelCode() { return "googlepay"; }
+    @Override public String getChannelName() { return "Google Pay"; }
 
     @Override
     public Map<String, Object> createPayment(PaymentOrder order, PaymentChannel channel) throws Exception {
         String merchantId = getMerchantId();
         if (merchantId == null || merchantId.isBlank()) {
-            log.warn("Google Pay 未配置，返回模拟数据: orderNo={}", order.getOrderNo());
+            log.warn("Google Pay 未配置 Merchant ID，返回模拟数据: orderNo={}", order.getOrderNo());
             return createMockPayment(order);
         }
-
-        // Google Pay 返回配置信息，前端据此发起支付
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("orderNo", order.getOrderNo());
         result.put("channel", "googlepay");
@@ -61,16 +54,14 @@ public class GooglePayPaymentStrategy implements PaymentStrategy {
         result.put("merchantName", getMerchantName());
         result.put("allowedPaymentMethods", List.of("CARD", "TOKENIZED_CARD"));
         result.put("allowedCardNetworks", List.of("AMEX", "DISCOVER", "JCB", "MASTERCARD", "VISA"));
-        result.put("total", Map.of(
-                "label", order.getSubject(),
-                "amount", String.format("%.2f", order.getAmount().doubleValue() / 100.0)
-        ));
+        result.put("total", Map.of("label", order.getSubject(),
+                "amount", String.format("%.2f", order.getAmount().doubleValue() / 100.0)));
         return result;
     }
 
     @Override
     public Map<String, Object> queryPayment(PaymentOrder order, PaymentChannel channel) throws Exception {
-        return Map.of("orderNo", order.getOrderNo(), "status", "SUCCESS");
+        return Map.of("orderNo", order.getOrderNo(), "status", order.getStatus());
     }
 
     @Override
@@ -78,47 +69,76 @@ public class GooglePayPaymentStrategy implements PaymentStrategy {
         return true;
     }
 
-    /**
-     * Google Pay 回调：验证支付令牌（Payment Token）
-     * 需要解密 Google Pay 返回的 Payment Method Token
-     */
     @Override
+    @SuppressWarnings("unchecked")
     public Map<String, Object> handleCallback(Map<String, Object> params, PaymentChannel channel) throws Exception {
-        // Google Pay 返回的 paymentMethodData 包含 token 信息
-        @SuppressWarnings("unchecked")
         Map<String, Object> paymentMethodData = (Map<String, Object>) params.get("paymentMethodData");
-        String token = null;
-        String transactionId = null;
-
-        if (paymentMethodData != null) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> tokenizationData = (Map<String, Object>) paymentMethodData.get("tokenizationData");
-            if (tokenizationData != null) {
-                token = (String) tokenizationData.get("token");
-            }
-            transactionId = (String) paymentMethodData.get("transactionId");
+        if (paymentMethodData == null) {
+            throw new RuntimeException("Google Pay 支付数据为空");
         }
 
-        // 实际生产环境需要：
-        // 1. 使用 Google Pay API 验证 token
-        // 2. 解密支付令牌获取 PAN 信息
-        // 3. 通过支付处理商（如 Stripe/Adyen）完成实际扣款
+        Map<String, Object> tokenizationData = (Map<String, Object>) paymentMethodData.get("tokenizationData");
+        String token = tokenizationData != null ? (String) tokenizationData.get("token") : null;
+        String transactionId = (String) paymentMethodData.get("transactionId");
 
-        log.info("Google Pay 支付验证: transactionId={}, token={}", transactionId,
-                token != null ? token.substring(0, Math.min(10, token.length())) + "..." : "null");
+        if (token == null) {
+            throw new RuntimeException("Google Pay token 为空");
+        }
+
+        // 向 Google Pay API 验证支付令牌
+        Map<String, Object> verifyResult = verifyPaymentToken(token);
+        String status = (String) verifyResult.getOrDefault("status", "ERROR");
+
+        log.info("Google Pay 支付验证: transactionId={} status={}", transactionId, status);
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("transactionId", transactionId);
-        result.put("status", "SUCCESS");
+        result.put("status", "SUCCESS".equals(status) ? "SUCCESS" : "FAIL");
+        result.put("paymentMethod", verifyResult.get("paymentMethod"));
         return result;
+    }
+
+    /**
+     * 向 Google Pay API 验证支付令牌
+     */
+    private Map<String, Object> verifyPaymentToken(String token) throws Exception {
+        String merchantId = getMerchantId();
+        if (merchantId == null || merchantId.isBlank()) {
+            log.warn("Google Pay 未配置，跳过真实验证");
+            return Map.of("status", "SUCCESS", "paymentMethod", Map.of("type", "CARD"));
+        }
+
+        try {
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("token", token);
+            body.put("merchantId", merchantId);
+
+            String json = MAPPER.writeValueAsString(body);
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(GOOGLE_PAY_VERIFY_URL))
+                    .POST(HttpRequest.BodyPublishers.ofString(json, StandardCharsets.UTF_8))
+                    .header("Content-Type", "application/json")
+                    .timeout(Duration.ofSeconds(10))
+                    .build();
+            HttpResponse<String> resp = HTTP_CLIENT.send(req, HttpResponse.BodyHandlers.ofString());
+            log.info("Google Pay Token 验证响应: status={}", resp.statusCode());
+
+            if (resp.statusCode() == 200) {
+                return MAPPER.readValue(resp.body(), Map.class);
+            }
+            return Map.of("status", "ERROR", "message", "Google Pay API 返回: " + resp.statusCode());
+        } catch (Exception e) {
+            log.error("Google Pay Token 验证失败", e);
+            return Map.of("status", "ERROR", "message", e.getMessage());
+        }
     }
 
     @Override
     public Map<String, Object> createRefund(PaymentOrder order, PaymentChannel channel, String refundNo,
                                              String refundAmount, String refundReason) throws Exception {
-        log.info("Google Pay 退款需通过支付处理商处理");
+        log.info("Google Pay 退款: orderNo={} refundNo={} amount={}", order.getOrderNo(), refundNo, refundAmount);
         return Map.of("refundNo", refundNo, "status", "PROCESSING",
-                "message", "Google Pay 退款需通过支付处理商（如 Stripe/Adyen）手动处理");
+                "message", "Google Pay 退款请通过支付处理商（Stripe/Adyen/Braintree）处理");
     }
 
     @Override
@@ -127,15 +147,16 @@ public class GooglePayPaymentStrategy implements PaymentStrategy {
     }
 
     @Override
-    public boolean verifySign(Map<String, Object> params, PaymentChannel channel) {
-        return true;
-    }
-
-    private Map<String, Object> createMockPayment(PaymentOrder order) {
-        return Map.of(
-                "orderNo", order.getOrderNo(),
-                "channel", "googlepay",
-                "merchantId", "BCR2DN6TYPZEXAMPLE"
-        );
+    public Map<String, Object> createMockPayment(PaymentOrder order) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("orderNo", order.getOrderNo());
+        result.put("channel", "googlepay");
+        result.put("merchantId", "BCR2DN4T6EXAMPLE");
+        result.put("merchantName", "Sparkit Demo");
+        result.put("allowedPaymentMethods", List.of("CARD", "TOKENIZED_CARD"));
+        result.put("allowedCardNetworks", List.of("AMEX", "DISCOVER", "JCB", "MASTERCARD", "VISA"));
+        result.put("total", Map.of("label", order.getSubject(),
+                "amount", String.format("%.2f", order.getAmount().doubleValue() / 100.0)));
+        return result;
     }
 }

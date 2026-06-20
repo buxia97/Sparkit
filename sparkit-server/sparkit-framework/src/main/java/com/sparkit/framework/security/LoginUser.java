@@ -23,6 +23,8 @@ public class LoginUser implements Serializable {
     private String nickname;
     private String avatar;
     private Long deptId;
+    private Long tenantId;
+    private String tenantCode;
     private Set<String> permissions;
     private Set<Long> roleIds;
     private Boolean isAdmin;

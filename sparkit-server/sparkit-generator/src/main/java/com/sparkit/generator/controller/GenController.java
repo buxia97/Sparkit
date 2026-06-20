@@ -6,7 +6,12 @@ import com.sparkit.common.model.R;
 import com.sparkit.generator.model.entity.GenTable;
 import com.sparkit.generator.service.GenTableService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
 
 /**
  * 代码生成器
@@ -45,5 +50,17 @@ public class GenController {
     public R<?> tableDelete(@PathVariable Long id) {
         genTableService.removeById(id);
         return R.ok();
+    }
+
+    /**
+     * 生成代码并下载 ZIP
+     */
+    @GetMapping("/tables/{tableId}/generate")
+    public ResponseEntity<byte[]> generateCode(@PathVariable Long tableId) throws IOException {
+        byte[] zipBytes = genTableService.generateCode(tableId);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.setContentDispositionFormData("attachment", "sparkit_code.zip");
+        return ResponseEntity.ok().headers(headers).body(zipBytes);
     }
 }

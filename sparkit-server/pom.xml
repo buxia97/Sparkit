@@ -23,6 +23,8 @@
         <module>sparkit-news</module>
         <module>sparkit-job</module>
         <module>sparkit-generator</module>
+        <module>sparkit-backup</module>
+        <module>sparkit-search</module>
         <module>sparkit-start</module>
     </modules>
 
@@ -111,6 +113,16 @@
             <dependency>
                 <groupId>com.sparkit</groupId>
                 <artifactId>sparkit-generator</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.sparkit</groupId>
+                <artifactId>sparkit-backup</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.sparkit</groupId>
+                <artifactId>sparkit-search</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

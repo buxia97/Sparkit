@@ -112,11 +112,7 @@ const fetchData = async () => {
       tableData.value = data.value.data || []
     }
   } catch (e) {
-    // 模拟数据
-    tableData.value = [
-      { id: 1, tenantName: '平台运营', tenantCode: 'platform', contactName: '管理员', contactPhone: '13800138000', tenantType: 'shared', status: 1, expireTime: '2099-12-31 00:00:00', createTime: '2024-01-01 00:00:00' },
-      { id: 2, tenantName: 'A公司', tenantCode: 'company_a', contactName: '张三', contactPhone: '13900139000', tenantType: 'shared', status: 1, expireTime: '2025-12-31 00:00:00', createTime: '2024-03-15 10:30:00' }
-    ]
+    ElMessage.error('获取租户列表失败')
   } finally { loading.value = false }
 }
 

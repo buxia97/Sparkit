@@ -84,12 +84,7 @@ const fetchData = async () => {
       tableData.value = data.value.data || []
     }
   } catch (e) {
-    // 模拟数据
-    tableData.value = [
-      { id: 1, backupName: 'sparkit_backup_20240615_010000.sql', backupType: 'full', fileSize: 52428800, storageType: 'local', status: 'success', createTime: '2024-06-15 01:00:00' },
-      { id: 2, backupName: 'sparkit_backup_20240616_010000.sql', backupType: 'full', fileSize: 53694464, storageType: 'local', status: 'success', createTime: '2024-06-16 01:00:00' },
-      { id: 3, backupName: 'sparkit_backup_20240617_010000.sql', backupType: 'full', fileSize: 54999040, storageType: 'remote', status: 'success', createTime: '2024-06-17 01:00:00' }
-    ]
+    ElMessage.error('获取备份列表失败')
   } finally { loading.value = false }
 }
 

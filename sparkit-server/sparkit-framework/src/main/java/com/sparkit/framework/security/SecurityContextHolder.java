@@ -31,6 +31,15 @@ public class SecurityContextHolder {
         return user != null ? user.getUsername() : null;
     }
 
+    public static LoginUser getLoginUser() {
+        return CONTEXT.get();
+    }
+
+    public static Long getTenantId() {
+        LoginUser user = CONTEXT.get();
+        return user != null ? user.getTenantId() : null;
+    }
+
     public static void clear() {
         CONTEXT.remove();
     }
