@@ -8,6 +8,7 @@ import com.sparkit.payment.model.entity.PaymentOrder;
 import com.sparkit.payment.model.entity.PaymentRefund;
 import com.sparkit.payment.service.PaymentChannelService;
 import com.sparkit.payment.service.PaymentOrderService;
+import com.sparkit.payment.service.PaymentReconciliationService;
 import com.sparkit.payment.service.PaymentRefundService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -25,6 +26,7 @@ public class PaymentController {
     private final PaymentOrderService orderService;
     private final PaymentChannelService channelService;
     private final PaymentRefundService refundService;
+    private final PaymentReconciliationService reconciliationService;
 
     // ============ 订单管理 ============
 
@@ -120,5 +122,24 @@ public class PaymentController {
     public R<Map<String, Object>> statistics(@RequestParam(required = false) String startTime,
                                               @RequestParam(required = false) String endTime) {
         return R.ok(orderService.statistics(startTime, endTime));
+    }
+
+    // ============ 对账管理 ============
+
+    @GetMapping("/api/v1/admin/payment/reconciliation")
+    public R<Map<String, Object>> reconcile(@RequestParam String date) {
+        return R.ok(reconciliationService.reconcile(java.time.LocalDate.parse(date)));
+    }
+
+    @GetMapping("/api/v1/admin/payment/reconciliation/recent")
+    public R<List<Map<String, Object>>> reconcileRecent(@RequestParam(defaultValue = "7") int days) {
+        return R.ok(reconciliationService.reconcileRecent(days));
+    }
+
+    // ============ 虚拟支付 ============
+
+    @PostMapping("/api/v1/admin/payment/virtual-pay")
+    public R<Map<String, Object>> virtualPay(@RequestBody Map<String, Object> params) {
+        return R.ok(orderService.createVirtualPayment(params));
     }
 }

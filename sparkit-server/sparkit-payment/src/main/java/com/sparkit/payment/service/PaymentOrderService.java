@@ -113,4 +113,27 @@ public class PaymentOrderService extends ServiceImpl<PaymentOrderMapper, Payment
 
         log.info("支付回调处理: channel={}, outTradeNo={}, success={}", channel, outTradeNo, success);
     }
+
+    /**
+     * 创建虚拟支付订单（小程序虚拟商品支付，如会员、课程等）
+     */
+    @Transactional
+    public Map<String, Object> createVirtualPayment(Map<String, Object> params) {
+        Long userId = Long.valueOf(params.get("userId").toString());
+        String channelCode = (String) params.get("channelCode");
+        BigDecimal amount = new BigDecimal(params.get("amount").toString());
+        String subject = (String) params.get("subject");
+        String body = (String) params.getOrDefault("body", subject).toString();
+        String idempotentKey = (String) params.get("idempotentKey");
+
+        PaymentOrder order = create(userId, channelCode, amount, subject, body, idempotentKey);
+
+        // 虚拟支付直接标记为成功（无需真实支付渠道回调）
+        order.setStatus(2);
+        order.setPaidTime(java.time.LocalDateTime.now());
+        updateById(order);
+
+        log.info("虚拟支付完成: orderNo={}, amount={}, subject={}", order.getOrderNo(), amount, subject);
+        return Map.of("orderNo", order.getOrderNo(), "status", "SUCCESS", "amount", amount.toPlainString());
+    }
 }

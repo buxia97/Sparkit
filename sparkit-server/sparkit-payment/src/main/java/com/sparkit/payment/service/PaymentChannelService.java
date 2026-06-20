@@ -20,4 +20,8 @@ public class PaymentChannelService extends ServiceImpl<PaymentChannelMapper, Pay
     public List<PaymentChannel> listEnabled() {
         return lambdaQuery().eq(PaymentChannel::getStatus, 1).orderByAsc(PaymentChannel::getSort).list();
     }
+
+    public PaymentChannel getByCode(String channelCode) {
+        return lambdaQuery().eq(PaymentChannel::getChannelCode, channelCode).one();
+    }
 }

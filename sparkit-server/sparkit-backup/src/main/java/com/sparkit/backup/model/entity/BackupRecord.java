@@ -30,6 +30,8 @@ public class BackupRecord extends BaseEntity {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private Long duration;
+    /** 远程备份地址 */
+    private String remoteUrl;
     @TableLogic
     private Integer deleted;
 }

@@ -10,7 +10,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 数据导入导出服务
@@ -105,5 +107,101 @@ public class ImportExportService {
     private String escapeHtml(String s) {
         if (s == null) return "";
         return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    }
+
+    // ============ EasyExcel 集成 ============
+
+    /**
+     * 使用 EasyExcel 导出（支持 .xlsx 格式）
+     * @param fileName 文件名
+     * @param headers 表头列表
+     * @param dataList 数据列表，每行为 Map<String, Object>
+     */
+    public void exportWithEasyExcel(String fileName, List<String> headers, List<Map<String, Object>> dataList,
+                                     HttpServletResponse response) throws IOException {
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setCharacterEncoding("UTF-8");
+        response.setHeader("Content-Disposition",
+                "attachment; filename=\"" + URLEncoder.encode(fileName, StandardCharsets.UTF_8) + ".xlsx\"");
+
+        // 构建 EasyExcel 数据
+        List<List<String>> excelData = new ArrayList<>();
+        // 表头
+        excelData.add(new ArrayList<>(headers));
+        // 数据
+        for (Map<String, Object> row : dataList) {
+            List<String> rowData = new ArrayList<>();
+            for (String header : headers) {
+                Object val = row.get(header);
+                rowData.add(val != null ? val.toString() : "");
+            }
+            excelData.add(rowData);
+        }
+
+        com.alibaba.excel.EasyExcel.write(response.getOutputStream())
+                .head(headers.stream().map(h -> List.of(h)).toList())
+                .sheet("Sheet1")
+                .doWrite(excelData.stream().skip(1).map(row -> {
+                    // 转换为 Map 格式
+                    return row;
+                }).toList());
+    }
+
+    /**
+     * 使用 EasyExcel 导出（直接传入实体类列表）
+     */
+    public <T> void exportWithEasyExcel(String fileName, Class<T> clazz, List<T> dataList,
+                                         HttpServletResponse response) throws IOException {
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setCharacterEncoding("UTF-8");
+        response.setHeader("Content-Disposition",
+                "attachment; filename=\"" + URLEncoder.encode(fileName, StandardCharsets.UTF_8) + ".xlsx\"");
+
+        com.alibaba.excel.EasyExcel.write(response.getOutputStream(), clazz)
+                .sheet("Sheet1")
+                .doWrite(dataList);
+    }
+
+    /**
+     * 使用 EasyExcel 导入（返回实体类列表）
+     */
+    public <T> List<T> importWithEasyExcel(MultipartFile file, Class<T> clazz) throws IOException {
+        com.alibaba.excel.context.AnalysisContext context = new com.alibaba.excel.context.AnalysisContext() {
+            // simplified implementation
+        };
+        List<T> result = new ArrayList<>();
+        com.alibaba.excel.EasyExcel.read(file.getInputStream(), clazz,
+                new com.alibaba.excel.read.listener.ReadListener<T>() {
+                    @Override
+                    public void invoke(T data, com.alibaba.excel.context.AnalysisContext analysisContext) {
+                        result.add(data);
+                    }
+
+                    @Override
+                    public void doAfterAllAnalysed(com.alibaba.excel.context.AnalysisContext analysisContext) {
+                    }
+
+                    @Override
+                    public void onException(Exception exception, com.alibaba.excel.context.AnalysisContext context) {
+                        throw new RuntimeException("导入失败: " + exception.getMessage(), exception);
+                    }
+                }).sheet().doRead();
+        return result;
+    }
+
+    /**
+     * 简易 EasyExcel 导出（无实体类，纯数据）
+     */
+    public void exportSimple(String fileName, List<List<String>> head, List<List<String>> data,
+                              HttpServletResponse response) throws IOException {
+        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        response.setCharacterEncoding("UTF-8");
+        response.setHeader("Content-Disposition",
+                "attachment; filename=\"" + URLEncoder.encode(fileName, StandardCharsets.UTF_8) + ".xlsx\"");
+
+        com.alibaba.excel.EasyExcel.write(response.getOutputStream())
+                .head(head.stream().map(List::of).toList())
+                .sheet("Sheet1")
+                .doWrite(data);
     }
 }

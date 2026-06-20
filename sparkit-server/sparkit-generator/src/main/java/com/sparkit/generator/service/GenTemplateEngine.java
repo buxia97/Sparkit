@@ -67,6 +67,109 @@ public class GenTemplateEngine {
         return bos.toByteArray();
     }
 
+    // ============ Freemarker 模板引擎支持 ============
+
+    /**
+     * 使用 Freemarker 模板生成代码并打包
+     * 支持自定义模板文件
+     */
+    public byte[] generateWithFreemarker(GenTable table, List<GenTableColumn> columns, Map<String, String> customTemplates) throws Exception {
+        freemarker.template.Configuration cfg = new freemarker.template.Configuration(freemarker.template.Configuration.VERSION_2_3_32);
+        cfg.setClassForTemplateLoading(GenTemplateEngine.class, "/templates/");
+
+        String className = toCamelCase(table.getTableName());
+        String classComment = table.getTableComment() != null ? table.getTableComment() : className;
+        String basePackage = "com.sparkit." + toCamelCase(table.getTableName().replace("sparkit_", ""));
+        String moduleName = toCamelCase(table.getTableName().replace("sparkit_", ""));
+
+        Map<String, Object> dataModel = new HashMap<>();
+        dataModel.put("className", className);
+        dataModel.put("classComment", classComment);
+        dataModel.put("tableName", table.getTableName());
+        dataModel.put("basePackage", basePackage);
+        dataModel.put("moduleName", moduleName);
+        dataModel.put("columns", columns);
+        dataModel.put("businessName", table.getBusinessName());
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        try (ZipOutputStream zos = new ZipOutputStream(bos)) {
+            // 使用默认模板或自定义模板
+            String[] templateKeys = {"entity", "mapper", "service", "controller", "vue", "vue-api", "sql"};
+            String[] outputPaths = {
+                    "java/" + basePackage.replace('.', '/') + "/model/entity/" + className + ".java",
+                    "java/" + basePackage.replace('.', '/') + "/mapper/" + className + "Mapper.java",
+                    "java/" + basePackage.replace('.', '/') + "/service/" + className + "Service.java",
+                    "java/" + basePackage.replace('.', '/') + "/controller/" + className + "Controller.java",
+                    "vue/" + toKebabCase(className) + "/index.vue",
+                    "vue/api/" + toKebabCase(className) + ".js",
+                    "sql/" + table.getTableName() + "_menu.sql"
+            };
+
+            for (int i = 0; i < templateKeys.length; i++) {
+                String template = customTemplates != null ? customTemplates.get(templateKeys[i]) : null;
+                String content;
+                if (template != null && !template.isBlank()) {
+                    // 使用自定义模板（字符串模板）
+                    freemarker.template.Template t = new freemarker.template.Template(templateKeys[i], template, cfg);
+                    StringWriter writer = new StringWriter();
+                    t.process(dataModel, writer);
+                    content = writer.toString();
+                } else {
+                    // 使用默认模板渲染
+                    content = renderDefaultTemplate(templateKeys[i], dataModel);
+                }
+                addToZip(zos, outputPaths[i], content);
+            }
+        }
+        return bos.toByteArray();
+    }
+
+    /**
+     * 预览生成结果
+     */
+    public Map<String, String> preview(GenTable table, List<GenTableColumn> columns) {
+        String className = toCamelCase(table.getTableName());
+        String classComment = table.getTableComment() != null ? table.getTableComment() : className;
+        String basePackage = "com.sparkit." + toCamelCase(table.getTableName().replace("sparkit_", ""));
+        String moduleName = toCamelCase(table.getTableName().replace("sparkit_", ""));
+
+        Map<String, String> vars = buildTemplateVars(table, columns, basePackage, moduleName, className, classComment);
+
+        Map<String, String> preview = new LinkedHashMap<>();
+        preview.put("entity", renderEntity(className, classComment, table.getTableName(), columns, vars));
+        preview.put("mapper", renderMapper(className, basePackage, vars));
+        preview.put("service", renderService(className, basePackage, classComment, vars));
+        preview.put("controller", renderController(className, basePackage, moduleName, classComment));
+        preview.put("vue", renderVuePage(className, moduleName, classComment, columns, vars));
+        preview.put("vueApi", renderVueApi(className, moduleName));
+        preview.put("sql", renderMenuSql(className, moduleName, classComment));
+        return preview;
+    }
+
+    private String renderDefaultTemplate(String templateKey, Map<String, Object> dataModel) {
+        // 回退到字符串替换方式
+        String className = (String) dataModel.get("className");
+        String classComment = (String) dataModel.get("classComment");
+        String tableName = (String) dataModel.get("tableName");
+        String basePackage = (String) dataModel.get("basePackage");
+        String moduleName = (String) dataModel.get("moduleName");
+        @SuppressWarnings("unchecked")
+        List<GenTableColumn> columns = (List<GenTableColumn>) dataModel.get("columns");
+        Map<String, String> vars = buildTemplateVars(null, columns, basePackage, moduleName, className, classComment);
+        if (vars == null) vars = new LinkedHashMap<>();
+
+        return switch (templateKey) {
+            case "entity" -> renderEntity(className, classComment, tableName, columns, vars);
+            case "mapper" -> renderMapper(className, basePackage, vars);
+            case "service" -> renderService(className, basePackage, classComment, vars);
+            case "controller" -> renderController(className, basePackage, moduleName, classComment);
+            case "vue" -> renderVuePage(className, moduleName, classComment, columns, vars);
+            case "vue-api" -> renderVueApi(className, moduleName);
+            case "sql" -> renderMenuSql(className, moduleName, classComment);
+            default -> "// TODO: " + templateKey;
+        };
+    }
+
     private Map<String, String> buildTemplateVars(GenTable table, List<GenTableColumn> columns,
                                                    String basePackage, String moduleName, String className, String classComment) {
         Map<String, String> vars = new LinkedHashMap<>();

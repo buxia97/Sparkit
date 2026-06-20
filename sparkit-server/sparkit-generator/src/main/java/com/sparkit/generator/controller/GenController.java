@@ -5,6 +5,7 @@ import com.sparkit.common.model.PageResult;
 import com.sparkit.common.model.R;
 import com.sparkit.generator.model.entity.GenTable;
 import com.sparkit.generator.service.GenTableService;
+import com.sparkit.generator.service.GenTemplateEngine;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -22,6 +23,7 @@ import java.io.IOException;
 public class GenController {
 
     private final GenTableService genTableService;
+    private final GenTemplateEngine templateEngine;
 
     @GetMapping("/tables")
     public R<PageResult<GenTable>> tableList(PageQuery query) {
@@ -62,5 +64,11 @@ public class GenController {
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
         headers.setContentDispositionFormData("attachment", "sparkit_code.zip");
         return ResponseEntity.ok().headers(headers).body(zipBytes);
+    }
+
+    /** 预览生成结果 */
+    @GetMapping("/tables/{tableId}/preview")
+    public R<Map<String, String>> preview(@PathVariable Long tableId) {
+        return R.ok(genTableService.previewCode(tableId));
     }
 }

@@ -43,4 +43,25 @@ public class BackupController {
         backupService.removeById(id);
         return R.ok();
     }
+
+    /** 增量备份 */
+    @PostMapping("/incremental")
+    public R<Map<String, Object>> incremental() {
+        BackupRecord record = backupService.createIncrementalBackup();
+        return R.ok(Map.of("id", record.getId(), "backupName", record.getBackupName(), "status", record.getStatus()));
+    }
+
+    /** 同步到远程存储 */
+    @PostMapping("/sync-to-remote/{id}")
+    public R<?> syncToRemote(@PathVariable Long id) {
+        backupService.syncToRemote(id);
+        return R.ok();
+    }
+
+    /** 清理过期备份 */
+    @PostMapping("/clean")
+    public R<?> cleanExpired(@RequestParam(defaultValue = "30") int keepDays) {
+        backupService.cleanExpiredBackups(keepDays);
+        return R.ok();
+    }
 }
