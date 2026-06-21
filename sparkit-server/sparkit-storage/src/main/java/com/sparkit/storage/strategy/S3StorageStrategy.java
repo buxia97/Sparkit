@@ -61,10 +61,10 @@ public class S3StorageStrategy implements StorageStrategy {
         String credentialScope = dateStamp + "/" + REGION + "/" + SERVICE + "/aws4_request";
         String stringToSign = "AWS4-HMAC-SHA256\n" + amzDate + "\n" + credentialScope + "\n" + sha256Hex(canonicalRequest.getBytes(StandardCharsets.UTF_8));
 
-        byte[] signingKey = getSignatureKey(config.getAccessKeySecret(), dateStamp, REGION, SERVICE);
+        byte[] signingKey = getSignatureKey(config.getSecretKey(), dateStamp, REGION, SERVICE);
         String signature = bytesToHex(hmacSha256(signingKey, stringToSign));
 
-        String auth = "AWS4-HMAC-SHA256 Credential=" + config.getAccessKeyId() + "/" + credentialScope
+        String auth = "AWS4-HMAC-SHA256 Credential=" + config.getAccessKey() + "/" + credentialScope
                 + ",SignedHeaders=" + signedHeaders + ",Signature=" + signature;
 
         HttpRequest req = HttpRequest.newBuilder()
@@ -111,9 +111,9 @@ public class S3StorageStrategy implements StorageStrategy {
             String credentialScope = dateStamp + "/" + REGION + "/" + SERVICE + "/aws4_request";
             String stringToSign = "AWS4-HMAC-SHA256\n" + amzDate + "\n" + credentialScope + "\n" + sha256Hex(canonicalRequest.getBytes(StandardCharsets.UTF_8));
 
-            byte[] signingKey = getSignatureKey(config.getAccessKeySecret(), dateStamp, REGION, SERVICE);
+            byte[] signingKey = getSignatureKey(config.getSecretKey(), dateStamp, REGION, SERVICE);
             String signature = bytesToHex(hmacSha256(signingKey, stringToSign));
-            String auth = "AWS4-HMAC-SHA256 Credential=" + config.getAccessKeyId() + "/" + credentialScope
+            String auth = "AWS4-HMAC-SHA256 Credential=" + config.getAccessKey() + "/" + credentialScope
                     + ",SignedHeaders=" + signedHeaders + ",Signature=" + signature;
 
             HttpRequest req = HttpRequest.newBuilder()

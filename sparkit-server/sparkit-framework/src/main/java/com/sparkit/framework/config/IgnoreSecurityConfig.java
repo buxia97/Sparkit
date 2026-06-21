@@ -27,7 +27,13 @@ public class IgnoreSecurityConfig {
         for (String pattern : ignoreUrls) {
             if (pattern.endsWith("/**")) {
                 String prefix = pattern.substring(0, pattern.length() - 3);
-                if (uri.startsWith(prefix)) return true;
+                // 去掉尾部 /，使 /v3/api-docs/** 能同时匹配 /v3/api-docs 和 /v3/api-docs/xxx
+                if (prefix.endsWith("/")) {
+                    prefix = prefix.substring(0, prefix.length() - 1);
+                }
+                if (uri.equals(prefix) || uri.startsWith(prefix + "/")) {
+                    return true;
+                }
             } else if (uri.equals(pattern)) {
                 return true;
             }

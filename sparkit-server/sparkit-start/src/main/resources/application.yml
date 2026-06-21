@@ -6,6 +6,9 @@ server:
 spring:
   application:
     name: sparkit-start
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
   profiles:
     active: dev
   jackson:
@@ -64,28 +67,31 @@ sparkit:
     refresh-expire: 604800
   security:
     ignore-urls:
+      - /
+      - /index.html
       - /api/v1/public/**
       - /api/v1/admin/users/login
       - /doc.html
       - /webjars/**
+      - /v3/api-docs
       - /v3/api-docs/**
       - /swagger-resources/**
       - /swagger-ui/**
       - /favicon.ico
       - /error
 
-# Knife4j
-springdoc:
-  swagger-ui:
-    path: /swagger-ui.html
-  api-docs:
-    path: /v3/api-docs
-  group-configs:
-    - group: 'default'
-      paths-to-match: '/**'
-      packages-to-scan: com.sparkit
-
 knife4j:
   enable: true
   setting:
     language: zh_cn
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+  show-actuator: false
+  default-flat-param-object: true
+  packages-to-scan: com.sparkit

@@ -1,6 +1,5 @@
 package com.sparkit.storage.strategy;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -12,7 +11,6 @@ import java.util.stream.Collectors;
  * 根据存储源类型自动选择对应的策略实现
  */
 @Component
-@RequiredArgsConstructor
 public class StorageStrategyFactory {
 
     private final Map<String, StorageStrategy> strategyMap;

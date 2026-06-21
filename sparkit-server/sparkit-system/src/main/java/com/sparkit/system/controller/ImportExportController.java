@@ -2,6 +2,8 @@ package com.sparkit.system.controller;
 
 import com.sparkit.common.model.R;
 import com.sparkit.system.service.ImportExportService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +16,7 @@ import java.util.Map;
 /**
  * 数据导入导出
  */
+@Tag(name = "数据导入导出", description = "CSV/Excel 数据导入导出")
 @RestController
 @RequestMapping("/api/v1/admin/import-export")
 @RequiredArgsConstructor
@@ -26,6 +29,7 @@ public class ImportExportController {
      * @param module 模块名：user/role/dept/config 等
      * @param format 导出格式：csv/excel
      */
+    @Operation(summary = "导出数据")
     @PostMapping("/export/{module}")
     public void export(@PathVariable String module,
                        @RequestParam(defaultValue = "csv") String format,
@@ -47,6 +51,7 @@ public class ImportExportController {
     /**
      * 下载导入模板
      */
+    @Operation(summary = "下载导入模板")
     @GetMapping("/template/{module}")
     public void downloadTemplate(@PathVariable String module,
                                  @RequestParam List<String> headers,
@@ -58,6 +63,7 @@ public class ImportExportController {
     /**
      * 文件导入（解析 CSV）
      */
+    @Operation(summary = "导入 CSV 文件")
     @PostMapping("/import/{module}")
     public R<List<String[]>> importFile(@PathVariable String module,
                                          @RequestParam("file") MultipartFile file) throws IOException {

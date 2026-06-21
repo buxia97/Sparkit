@@ -147,6 +147,10 @@ public class GooglePayPaymentStrategy implements PaymentStrategy {
     }
 
     @Override
+    public boolean verifySign(Map<String, Object> params, PaymentChannel channel) {
+        return true;
+    }
+
     public Map<String, Object> createMockPayment(PaymentOrder order) {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("orderNo", order.getOrderNo());

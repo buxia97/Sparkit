@@ -47,6 +47,14 @@ public class ConfigService extends ServiceImpl<ConfigMapper, Config> {
     }
 
     /**
+     * 获取配置值（带默认值）
+     */
+    public String getConfigValue(String key, String defaultValue) {
+        String value = getConfigValue(key);
+        return value != null ? value : defaultValue;
+    }
+
+    /**
      * 获取分组配置
      */
     public Map<String, String> getConfigByGroup(String group) {

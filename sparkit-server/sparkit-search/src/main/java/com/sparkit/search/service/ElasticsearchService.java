@@ -90,10 +90,10 @@ public class ElasticsearchService {
             String url = getEsUrl() + "/" + indexName;
             HttpRequest req = HttpRequest.newBuilder()
                     .uri(URI.create(url))
-                    .HEAD()
+                    .method("HEAD", HttpRequest.BodyPublishers.noBody())
                     .timeout(Duration.ofSeconds(5))
                     .build();
-            HttpResponse<String> resp = HTTP_CLIENT.send(req, HttpResponse.BodyHandlers.discarding());
+            HttpResponse<Void> resp = HTTP_CLIENT.send(req, HttpResponse.BodyHandlers.discarding());
             return resp.statusCode() == 200;
         } catch (Exception e) {
             return false;

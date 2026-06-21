@@ -166,9 +166,6 @@ public class ImportExportService {
      * 使用 EasyExcel 导入（返回实体类列表）
      */
     public <T> List<T> importWithEasyExcel(MultipartFile file, Class<T> clazz) throws IOException {
-        com.alibaba.excel.context.AnalysisContext context = new com.alibaba.excel.context.AnalysisContext() {
-            // simplified implementation
-        };
         List<T> result = new ArrayList<>();
         com.alibaba.excel.EasyExcel.read(file.getInputStream(), clazz,
                 new com.alibaba.excel.read.listener.ReadListener<T>() {
@@ -200,7 +197,7 @@ public class ImportExportService {
                 "attachment; filename=\"" + URLEncoder.encode(fileName, StandardCharsets.UTF_8) + ".xlsx\"");
 
         com.alibaba.excel.EasyExcel.write(response.getOutputStream())
-                .head(head.stream().map(List::of).toList())
+                .head(head)
                 .sheet("Sheet1")
                 .doWrite(data);
     }

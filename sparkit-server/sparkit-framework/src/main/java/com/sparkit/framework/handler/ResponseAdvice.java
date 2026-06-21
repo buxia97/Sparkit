@@ -16,6 +16,12 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 @RestControllerAdvice
 public class ResponseAdvice implements ResponseBodyAdvice<Object> {
 
+    // Springdoc/Knife4j 控制器类所在包
+    private static final String[] EXCLUDED_PACKAGES = {
+            "org.springdoc.",
+            "org.springframework.boot.autoconfigure.web.servlet."
+    };
+
     @Override
     public boolean supports(MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
         // 标注了 IgnoreResponseAdvice 注解的方法不包装
@@ -23,7 +29,18 @@ public class ResponseAdvice implements ResponseBodyAdvice<Object> {
             return false;
         }
         // 已经是 R 类型的不再包装
-        return !returnType.getParameterType().equals(R.class);
+        if (returnType.getParameterType().equals(R.class)) {
+            return false;
+        }
+        // Springdoc/Knife4j 控制器不包装
+        Class<?> controllerClass = returnType.getContainingClass();
+        String className = controllerClass.getName();
+        for (String prefix : EXCLUDED_PACKAGES) {
+            if (className.startsWith(prefix)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override

@@ -6,6 +6,8 @@ import com.sparkit.common.model.R;
 import com.sparkit.storage.model.entity.FileInfo;
 import com.sparkit.storage.service.FileService;
 import com.sparkit.storage.service.MediaProcessService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -25,6 +27,7 @@ import java.util.Map;
 /**
  * 文件存储接口
  */
+@Tag(name = "文件存储", description = "文件上传、分片上传、预览、下载")
 @RestController
 @RequiredArgsConstructor
 public class FileController {

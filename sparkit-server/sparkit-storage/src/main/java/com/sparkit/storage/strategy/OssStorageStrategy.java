@@ -49,8 +49,8 @@ public class OssStorageStrategy implements StorageStrategy {
                 ZonedDateTime.now(ZoneId.of("GMT")).withNano(0));
 
         String stringToSign = "PUT\n\n" + contentType + "\n" + date + "\n/" + config.getBucket() + "/" + path;
-        String signature = hmacSha1(stringToSign, config.getAccessKeySecret());
-        String auth = "OSS " + config.getAccessKeyId() + ":" + signature;
+        String signature = hmacSha1(stringToSign, config.getSecretKey());
+        String auth = "OSS " + config.getAccessKey() + ":" + signature;
 
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(url))
@@ -84,8 +84,8 @@ public class OssStorageStrategy implements StorageStrategy {
             String date = DateTimeFormatter.RFC_1123_DATE_TIME.format(
                     ZonedDateTime.now(ZoneId.of("GMT")).withNano(0));
             String stringToSign = "DELETE\n\n\n" + date + "\n/" + config.getBucket() + "/" + path;
-            String signature = hmacSha1(stringToSign, config.getAccessKeySecret());
-            String auth = "OSS " + config.getAccessKeyId() + ":" + signature;
+            String signature = hmacSha1(stringToSign, config.getSecretKey());
+            String auth = "OSS " + config.getAccessKey() + ":" + signature;
 
             HttpRequest req = HttpRequest.newBuilder()
                     .uri(URI.create(url))

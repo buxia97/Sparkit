@@ -136,13 +136,13 @@ public class KodoStorageStrategy implements StorageStrategy {
                 + "\",\"deadline\":" + (System.currentTimeMillis() / 1000 + 3600) + "}";
         String encodedPutPolicy = Base64.getUrlEncoder().withoutPadding()
                 .encodeToString(putPolicy.getBytes(StandardCharsets.UTF_8));
-        String sign = hmacSha1(encodedPutPolicy, config.getAccessKeySecret());
-        return config.getAccessKeyId() + ":" + sign + ":" + encodedPutPolicy;
+        String sign = hmacSha1(encodedPutPolicy, config.getSecretKey());
+        return config.getAccessKey() + ":" + sign + ":" + encodedPutPolicy;
     }
 
     private String generateAccessToken(StorageConfig config, String signingStr) throws Exception {
-        String sign = hmacSha1(signingStr, config.getAccessKeySecret());
-        return config.getAccessKeyId() + ":" + sign;
+        String sign = hmacSha1(signingStr, config.getSecretKey());
+        return config.getAccessKey() + ":" + sign;
     }
 
     private String hmacSha1(String data, String key) throws Exception {

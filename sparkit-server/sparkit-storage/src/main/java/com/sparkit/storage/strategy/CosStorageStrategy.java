@@ -52,10 +52,10 @@ public class CosStorageStrategy implements StorageStrategy {
         String httpString = "put\n/" + path + "\n\nhost=" + host + "\n";
         String sha1Http = sha1(httpString);
         String stringToSign = "sha1\n" + keyTime + "\n" + sha1Http + "\n";
-        String signKey = hmacSha1(keyTime, config.getAccessKeySecret());
+        String signKey = hmacSha1(keyTime, config.getSecretKey());
         String signature = hmacSha1(stringToSign, signKey);
 
-        String auth = "q-sign-algorithm=sha1&q-ak=" + config.getAccessKeyId()
+        String auth = "q-sign-algorithm=sha1&q-ak=" + config.getAccessKey()
                 + "&q-sign-time=" + keyTime + "&q-key-time=" + keyTime
                 + "&q-header-list=host&q-url-param-list=&q-signature=" + signature;
 
@@ -95,9 +95,9 @@ public class CosStorageStrategy implements StorageStrategy {
             String httpString = "delete\n/" + path + "\n\nhost=" + host + "\n";
             String sha1Http = sha1(httpString);
             String stringToSign = "sha1\n" + keyTime + "\n" + sha1Http + "\n";
-            String signKey = hmacSha1(keyTime, config.getAccessKeySecret());
+            String signKey = hmacSha1(keyTime, config.getSecretKey());
             String signature = hmacSha1(stringToSign, signKey);
-            String auth = "q-sign-algorithm=sha1&q-ak=" + config.getAccessKeyId()
+            String auth = "q-sign-algorithm=sha1&q-ak=" + config.getAccessKey()
                     + "&q-sign-time=" + keyTime + "&q-key-time=" + keyTime
                     + "&q-header-list=host&q-url-param-list=&q-signature=" + signature;
 

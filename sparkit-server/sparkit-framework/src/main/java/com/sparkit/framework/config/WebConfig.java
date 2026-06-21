@@ -10,6 +10,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
+import org.springframework.web.servlet.config.annotation.PathMatchConfigurer;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -19,6 +21,17 @@ import java.time.format.DateTimeFormatter;
  */
 @Configuration
 public class WebConfig {
+
+
+    @Bean
+    public WebMvcConfigurer pathMatchConfigurer() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void configurePathMatch(PathMatchConfigurer configurer) {
+                configurer.setPatternParser(null);
+            }
+        };
+    }
 
     @Bean
     public CorsFilter corsFilter() {

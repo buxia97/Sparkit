@@ -1,5 +1,6 @@
 package com.sparkit.framework.filter;
 
+import com.sparkit.framework.config.IgnoreSecurityConfig;
 import com.sparkit.framework.service.IpBlacklistService;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,6 +22,7 @@ import java.io.IOException;
 public class IpBlacklistFilter implements Filter {
 
     private final IpBlacklistService ipBlacklistService;
+    private final IgnoreSecurityConfig ignoreSecurityConfig;
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
@@ -28,10 +30,18 @@ public class IpBlacklistFilter implements Filter {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
 
+        String uri = httpRequest.getRequestURI();
+
+        // 放行白名单请求
+        if (ignoreSecurityConfig.matches(uri)) {
+            chain.doFilter(request, response);
+            return;
+        }
+
         String ip = getClientIp(httpRequest);
 
         if (ipBlacklistService.isBanned(ip)) {
-            log.warn("IP 黑名单拦截: ip={}, uri={}", ip, httpRequest.getRequestURI());
+            log.warn("IP 黑名单拦截: ip={}, uri={}", ip, uri);
             httpResponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
             httpResponse.setContentType("application/json;charset=UTF-8");
             httpResponse.getWriter().write("{\"code\":403,\"msg\":\"IP 已被封禁\"}");

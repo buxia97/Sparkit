@@ -1,5 +1,6 @@
 package com.sparkit.news.service;
 
+import com.sparkit.common.model.PageQuery;
 import com.sparkit.news.model.entity.NewsArticle;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,9 +39,11 @@ public class NewsSeoService {
         xml.append("  </url>\n");
 
         // 文章列表页
-        var pageResult = articleService.page(
-                new com.sparkit.common.model.PageQuery(1, 1000), null, 1);
-        for (NewsArticle article : pageResult.getList()) {
+        PageQuery pageQuery = new PageQuery();
+        pageQuery.setPage(1);
+        pageQuery.setPageSize(1000);
+        var pageResult = articleService.page(pageQuery, null, 1);
+        for (NewsArticle article : pageResult.getRecords()) {
             xml.append("  <url>\n");
             xml.append("    <loc>").append(baseUrl).append("/news/").append(article.getId()).append("</loc>\n");
             if (article.getPublishTime() != null) {

@@ -3,8 +3,8 @@ package com.sparkit.notification.strategy;
 import com.sparkit.notification.model.entity.NotifyTemplate;
 import com.sparkit.system.service.ConfigService;
 import jakarta.mail.internet.MimeMessage;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
@@ -16,11 +16,15 @@ import java.util.Map;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class EmailNotifyStrategy implements NotifyStrategy {
 
-    private final JavaMailSender mailSender;
+    @Autowired(required = false)
+    private JavaMailSender mailSender;
     private final ConfigService configService;
+
+    public EmailNotifyStrategy(ConfigService configService) {
+        this.configService = configService;
+    }
 
     @Override
     public String getChannel() {
@@ -38,6 +42,10 @@ public class EmailNotifyStrategy implements NotifyStrategy {
         String title = replaceVariables(template.getTitle(), params);
 
         try {
+            if (mailSender == null) {
+                log.warn("邮件服务未配置，跳过发送: to={}", target);
+                return false;
+            }
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             helper.setFrom(getFrom());

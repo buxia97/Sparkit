@@ -45,7 +45,7 @@ public class GenTableService extends ServiceImpl<GenTableMapper, GenTable> {
             throw new IllegalArgumentException("表不存在: " + tableId);
         }
         List<GenTableColumn> columns = columnMapper.selectList(
-                new LambdaQueryWrapper<GenTableColumn>().eq(GenTableColumn::getTableName, table.getTableName())
+                new LambdaQueryWrapper<GenTableColumn>().eq(GenTableColumn::getTableId, tableId)
                         .orderByAsc(GenTableColumn::getSort));
         log.info("开始生成代码: table={} columns={}", table.getTableName(), columns.size());
         return templateEngine.generateAndZip(table, columns);
@@ -60,7 +60,7 @@ public class GenTableService extends ServiceImpl<GenTableMapper, GenTable> {
             throw new IllegalArgumentException("表不存在: " + tableId);
         }
         List<GenTableColumn> columns = columnMapper.selectList(
-                new LambdaQueryWrapper<GenTableColumn>().eq(GenTableColumn::getTableName, table.getTableName())
+                new LambdaQueryWrapper<GenTableColumn>().eq(GenTableColumn::getTableId, tableId)
                         .orderByAsc(GenTableColumn::getSort));
         return templateEngine.preview(table, columns);
     }
